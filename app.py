@@ -314,40 +314,50 @@ with st.sidebar:
         if k in current_tickers
     }
 
-    # Collect weights with automatic capping
+    # Collect weights with slider + number input
     slider_values = {}
     for i, ticker in enumerate(tickers):
-        # Calculate how much is already used by previous tickers
-        used_by_previous = sum(slider_values.values())
-        max_available = max(0.0, 100.0 - used_by_previous)
-
         # Get default value
         if ticker in st.session_state.ticker_weights:
             default_weight = st.session_state.ticker_weights[ticker]
         elif loaded and ticker in loaded["weights"]:
             default_weight = loaded["weights"][ticker] * 100
         else:
-            # Distribute remaining equally among remaining tickers
-            remaining_tickers = len(tickers) - i
-            default_weight = max_available / remaining_tickers if remaining_tickers > 0 else 0
+            default_weight = 100.0 / len(tickers) if tickers else 25.0
 
-        # Cap default to max available
-        default_weight = min(default_weight, max_available)
+        # Create two columns: slider (wider) + number input
+        col_slider, col_input = st.columns([3, 1])
 
-        # Create slider for ALL tickers
-        weight = st.slider(
-            f"{ticker}",
-            min_value=0.0,
-            max_value=100.0,
-            value=default_weight,
-            step=1.0,
-            key=f"weight_{ticker}_{i}"  # Unique key
-        )
+        with col_slider:
+            slider_val = st.slider(
+                f"{ticker}",
+                min_value=0.0,
+                max_value=100.0,
+                value=float(default_weight),
+                step=1.0,
+                key=f"slider_{ticker}_{i}",
+                label_visibility="visible"
+            )
 
-        # Auto-cap if exceeds available
-        if weight > max_available:
-            weight = max_available
-            st.caption(f"↳ Auf {weight:.1f}% begrenzt (max. verfügbar)")
+        with col_input:
+            input_val = st.number_input(
+                "%",
+                min_value=0.0,
+                max_value=100.0,
+                value=float(default_weight),
+                step=1.0,
+                key=f"input_{ticker}_{i}",
+                label_visibility="collapsed"
+            )
+
+        # Use whichever changed (compare to stored value)
+        stored = st.session_state.ticker_weights.get(ticker, default_weight)
+        if abs(slider_val - stored) > 0.01:
+            weight = slider_val
+        elif abs(input_val - stored) > 0.01:
+            weight = input_val
+        else:
+            weight = slider_val  # Default to slider
 
         slider_values[ticker] = weight
         st.session_state.ticker_weights[ticker] = weight
@@ -356,12 +366,12 @@ with st.sidebar:
     total = sum(slider_values.values())
     remaining = 100.0 - total
 
-    if remaining > 0.1:
-        st.info(f"📊 Summe: {total:.1f}% | Noch {remaining:.1f}% verfügbar")
-    elif remaining < -0.1:
-        st.warning(f"⚠️ Summe: {total:.1f}% - zu viel vergeben!")
-    else:
+    if abs(remaining) < 0.1:
         st.success(f"✅ Summe: 100%")
+    elif remaining > 0:
+        st.info(f"📊 Summe: {total:.1f}% | Noch {remaining:.1f}% verfügbar")
+    else:
+        st.warning(f"⚠️ Summe: {total:.1f}% - bitte reduzieren!")
 
     # Convert to decimal weights (normalize to ensure sum = 1)
     if total > 0:
