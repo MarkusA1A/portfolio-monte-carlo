@@ -502,14 +502,27 @@ if run_simulation:
     elif abs(sum(weights.values()) - 1.0) > 0.01:
         st.error(f"Gewichtungen müssen 100% ergeben. Aktuell: {sum(weights.values())*100:.1f}%")
     else:
-        # Memory estimation and warning
+        # Memory estimation and automatic adjustment
         estimated_memory = estimate_memory_mb(num_simulations, time_horizon_days, len(tickers))
-        if estimated_memory > 500:
+
+        # Hard limit: 800 MB max to prevent crashes
+        MAX_MEMORY_MB = 800
+        original_simulations = num_simulations
+
+        if estimated_memory > MAX_MEMORY_MB:
+            # Auto-reduce simulations to fit within memory limit
+            while estimated_memory > MAX_MEMORY_MB and num_simulations > 1000:
+                num_simulations = num_simulations // 2
+                estimated_memory = estimate_memory_mb(num_simulations, time_horizon_days, len(tickers))
+
             st.warning(
-                f"⚠️ Geschätzter Speicherbedarf: {estimated_memory:.0f} MB. "
-                f"Bei {len(tickers)} Assets, {num_simulations:,} Simulationen und "
-                f"{time_horizon_years} Jahren kann die App langsam werden oder abstürzen. "
-                f"Reduzieren Sie die Simulationsanzahl bei vielen Assets."
+                f"⚠️ **Automatische Anpassung:** Simulationen von {original_simulations:,} auf {num_simulations:,} reduziert, "
+                f"um Abstürze zu vermeiden ({len(tickers)} Assets, {time_horizon_years} Jahre)."
+            )
+        elif estimated_memory > 500:
+            st.info(
+                f"ℹ️ Geschätzter Speicherbedarf: {estimated_memory:.0f} MB. "
+                f"Bei Problemen reduzieren Sie die Simulationsanzahl."
             )
 
         progress = st.progress(0, text="Lade Marktdaten...")
