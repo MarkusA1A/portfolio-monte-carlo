@@ -230,30 +230,40 @@ with st.sidebar:
     # Weight configuration
     st.subheader("Gewichtungen")
 
-    raw_weights = {}
-
+    # Collect slider values first
+    slider_values = {}
     for i, ticker in enumerate(tickers):
         if loaded and ticker in loaded["weights"]:
             default_weight = loaded["weights"][ticker] * 100
         else:
             default_weight = 100.0 / len(tickers) if tickers else 25.0
 
-        weight = st.slider(
-            f"{ticker}",
-            min_value=0.0,
-            max_value=100.0,
-            value=min(default_weight, 100.0),
-            step=1.0,
-            key=f"weight_{ticker}"
-        )
-        raw_weights[ticker] = weight
+        if i < len(tickers) - 1:
+            # All tickers except the last one get a slider
+            weight = st.slider(
+                f"{ticker}",
+                min_value=0.0,
+                max_value=100.0,
+                value=min(default_weight, 100.0),
+                step=1.0,
+                key=f"weight_{ticker}"
+            )
+            slider_values[ticker] = weight
+        else:
+            # Last ticker: calculate remaining
+            used = sum(slider_values.values())
+            remaining = max(0.0, 100.0 - used)
+            st.text(f"{ticker}: {remaining:.1f}% (Rest)")
+            slider_values[ticker] = remaining
 
-    # Normalize weights to sum to 100%
-    total_weight = sum(raw_weights.values())
-    if total_weight > 0:
-        weights = {t: w / total_weight for t, w in raw_weights.items()}
-        if abs(total_weight - 100.0) > 0.1:
-            st.caption(f"⚖️ Gewichtungen normalisiert (Summe war {total_weight:.1f}%)")
+    # Show total
+    total = sum(slider_values.values())
+    if total != 100.0:
+        st.warning(f"⚠️ Summe: {total:.1f}% - bitte Gewichtungen anpassen")
+
+    # Convert to decimal weights (normalize to ensure sum = 1)
+    if total > 0:
+        weights = {t: w / total for t, w in slider_values.items()}
     else:
         weights = {t: 1.0 / len(tickers) for t in tickers} if tickers else {}
 
