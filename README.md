@@ -2,19 +2,30 @@
 
 Eine interaktive Web-Applikation zur Monte Carlo Simulation von Investment-Portfolios.
 
+**Erdacht von Markus O. Thalhamer** ([mthalhamer@thalhamer.com](mailto:mthalhamer@thalhamer.com)) mit Unterstützung von **Claude**.
+
 ## Features
 
 - **Multi-Asset Portfolio**: Beliebig viele Assets mit automatischer Korrelationsberechnung
 - **Historische Marktdaten**: Integration von Yahoo Finance
-- **Risikometriken**: VaR, CVaR, Sharpe Ratio, Sortino Ratio, Max Drawdown
-- **Rebalancing-Strategien**: Buy & Hold, Periodisch, Threshold, Hybrid
+- **Risikometriken**: VaR, CVaR, Sharpe Ratio, Sortino Ratio, Max Drawdown, Beta, Alpha
+- **Rebalancing-Strategien**: Buy & Hold, Periodisch, Threshold
+- **Benchmark-Vergleich**: Portfolio vs. S&P 500, DAX, etc.
+- **Sparplan-Simulation**: Monatliche Einzahlungen simulieren
+- **Szenario-Analyse**: Bull/Bear/Crash-Szenarien testen
+- **Export**: Excel und CSV Reports
 - **Interaktive Visualisierungen**: Simulationspfade, VaR-Kegel, Korrelations-Heatmaps
+- **Einführung für Laien**: Ausführliche Erklärungen aller Konzepte
+
+## Demo
+
+Die App läuft auf Streamlit Cloud: [Link folgt nach Deployment]
 
 ## Installation
 
 ```bash
 # Repository klonen
-git clone https://github.com/DEIN-USERNAME/portfolio-monte-carlo.git
+git clone https://github.com/MarkusA1A/portfolio-monte-carlo.git
 cd portfolio-monte-carlo
 
 # Dependencies installieren
@@ -42,7 +53,9 @@ portfolio-monte-carlo/
 ├── requirements.txt            # Dependencies
 ├── src/
 │   ├── simulation/
-│   │   └── monte_carlo.py      # Monte Carlo Engine
+│   │   ├── monte_carlo.py      # Monte Carlo Engine
+│   │   ├── savings_plan.py     # Sparplan-Simulation
+│   │   └── scenarios.py        # Szenario-Analyse
 │   ├── portfolio/
 │   │   ├── portfolio.py        # Portfolio & Asset Klassen
 │   │   └── rebalancing.py      # Rebalancing-Strategien
@@ -50,9 +63,11 @@ portfolio-monte-carlo/
 │   │   └── market_data.py      # Yahoo Finance Integration
 │   ├── risk/
 │   │   ├── var.py              # VaR, CVaR
-│   │   └── metrics.py          # Sharpe, Sortino, etc.
-│   └── visualization/
-│       └── charts.py           # Plotly Charts
+│   │   └── metrics.py          # Sharpe, Sortino, Beta, Alpha
+│   ├── visualization/
+│   │   └── charts.py           # Plotly Charts
+│   └── export/
+│       └── reports.py          # Excel/CSV Export
 └── tests/
     └── test_simulation.py      # Unit Tests
 ```
@@ -65,7 +80,19 @@ portfolio-monte-carlo/
 - **yfinance** - Marktdaten
 - **Plotly** - Visualisierungen
 - **SciPy** - Statistik
+- **openpyxl** - Excel Export
+
+## Hinweis
+
+Diese App dient ausschließlich zu Bildungs- und Planungszwecken. Sie stellt keine Anlageberatung dar. Investitionsentscheidungen sollten immer unter Berücksichtigung der persönlichen finanziellen Situation und ggf. mit professioneller Beratung getroffen werden.
 
 ## Lizenz
 
 MIT
+
+## Autor
+
+**Markus O. Thalhamer**
+Email: [mthalhamer@thalhamer.com](mailto:mthalhamer@thalhamer.com)
+
+Entwickelt mit Unterstützung von **Claude** (Anthropic).

@@ -989,4 +989,12 @@ else:
 
 # Footer
 st.markdown("---")
-st.caption("Monte Carlo Portfolio Simulation | Yahoo Finance Daten | Made with Streamlit")
+st.markdown("""
+<div style="text-align: center; color: #666; font-size: 0.9rem;">
+    <p><strong>Monte Carlo Portfolio Simulation</strong></p>
+    <p>Erdacht von <strong>Markus O. Thalhamer</strong>
+    (<a href="mailto:mthalhamer@thalhamer.com">mthalhamer@thalhamer.com</a>)
+    mit Unterstützung von <strong>Claude</strong></p>
+    <p style="font-size: 0.8rem;">Daten von Yahoo Finance | Erstellt mit Streamlit</p>
+</div>
+""", unsafe_allow_html=True)
