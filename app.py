@@ -192,7 +192,8 @@ st.title("📈 Monte Carlo Portfolio Simulation")
 
 # Initialize session state
 for key in ['portfolio', 'results', 'loaded_config', 'benchmark_data',
-            'savings_results', 'scenario_results', 'efficient_frontier', 'withdrawal_results']:
+            'savings_results', 'scenario_results', 'efficient_frontier', 'withdrawal_results',
+            'swr_result', 'swr_params']:
     if key not in st.session_state:
         st.session_state[key] = None
 
@@ -978,21 +979,25 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
         st.info(f"**Entnahmerate**: {withdrawal_rate:.1f}% p.a. (Die '4%-Regel' gilt als konservativ)")
 
-        if st.button("🏦 Entnahme simulieren", key="run_withdrawal"):
-            with st.spinner("Simuliere Entnahme-Szenarien..."):
-                simulator = WithdrawalSimulator(n_simulations=5000)
+        # Use form to prevent page jump on button click
+        with st.form(key="withdrawal_form"):
+            submitted = st.form_submit_button("🏦 Entnahme simulieren", use_container_width=True)
 
-                withdrawal_results = simulator.simulate(
-                    initial_value=withdrawal_initial,
-                    monthly_withdrawal=monthly_withdrawal,
-                    expected_annual_return=withdrawal_return,
-                    annual_volatility=withdrawal_volatility,
-                    years=withdrawal_years,
-                    inflation_rate=withdrawal_inflation,
-                    adjust_for_inflation=adjust_for_inflation
-                )
+            if submitted:
+                with st.spinner("Simuliere Entnahme-Szenarien..."):
+                    simulator = WithdrawalSimulator(n_simulations=5000)
 
-                st.session_state.withdrawal_results = withdrawal_results
+                    withdrawal_results = simulator.simulate(
+                        initial_value=withdrawal_initial,
+                        monthly_withdrawal=monthly_withdrawal,
+                        expected_annual_return=withdrawal_return,
+                        annual_volatility=withdrawal_volatility,
+                        years=withdrawal_years,
+                        inflation_rate=withdrawal_inflation,
+                        adjust_for_inflation=adjust_for_inflation
+                    )
+
+                    st.session_state.withdrawal_results = withdrawal_results
 
         # Display results
         if st.session_state.withdrawal_results is not None:
@@ -1079,27 +1084,43 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
             )
             target_success = target_success_pct / 100.0
 
-            if st.button("Sichere Entnahmerate berechnen", key="calc_swr"):
-                with st.spinner("Berechne optimale Entnahmerate..."):
-                    simulator = WithdrawalSimulator(n_simulations=3000)
-                    swr_result = simulator.find_safe_withdrawal_rate(
-                        initial_value=withdrawal_initial,
-                        expected_annual_return=withdrawal_return,
-                        annual_volatility=withdrawal_volatility,
-                        years=withdrawal_years,
-                        target_success_rate=target_success,
-                        inflation_rate=withdrawal_inflation,
-                        adjust_for_inflation=adjust_for_inflation
-                    )
+            # Use form to prevent page jump
+            with st.form(key="swr_form"):
+                swr_submitted = st.form_submit_button("Sichere Entnahmerate berechnen", use_container_width=True)
 
-                    st.success(f"""
-                    **Ergebnis für {target_success*100:.0f}% Erfolgswahrscheinlichkeit:**
+                if swr_submitted:
+                    with st.spinner("Berechne optimale Entnahmerate..."):
+                        simulator = WithdrawalSimulator(n_simulations=3000)
+                        swr_result = simulator.find_safe_withdrawal_rate(
+                            initial_value=withdrawal_initial,
+                            expected_annual_return=withdrawal_return,
+                            annual_volatility=withdrawal_volatility,
+                            years=withdrawal_years,
+                            target_success_rate=target_success,
+                            inflation_rate=withdrawal_inflation,
+                            adjust_for_inflation=adjust_for_inflation
+                        )
 
-                    - 👤 **Zeitraum**: Von {start_age} bis {end_age} Jahren ({withdrawal_years} Jahre)
-                    - 💰 **Sichere monatliche Entnahme**: {format_currency(swr_result['monthly_withdrawal'])}
-                    - 📊 **Sichere Entnahmerate (SWR)**: {swr_result['withdrawal_rate_pct']:.2f}% p.a.
-                    - 📅 **Jährliche Entnahme**: {format_currency(swr_result['annual_withdrawal'])}
-                    """)
+                        st.session_state.swr_result = swr_result
+                        st.session_state.swr_params = {
+                            'target_success': target_success,
+                            'start_age': start_age,
+                            'end_age': end_age,
+                            'withdrawal_years': withdrawal_years
+                        }
+
+            # Display SWR result if available
+            if 'swr_result' in st.session_state and st.session_state.swr_result is not None:
+                swr = st.session_state.swr_result
+                params = st.session_state.swr_params
+                st.success(f"""
+                **Ergebnis für {params['target_success']*100:.0f}% Erfolgswahrscheinlichkeit:**
+
+                - 👤 **Zeitraum**: Von {params['start_age']} bis {params['end_age']} Jahren ({params['withdrawal_years']} Jahre)
+                - 💰 **Sichere monatliche Entnahme**: {format_currency(swr['monthly_withdrawal'])}
+                - 📊 **Sichere Entnahmerate (SWR)**: {swr['withdrawal_rate_pct']:.2f}% p.a.
+                - 📅 **Jährliche Entnahme**: {format_currency(swr['annual_withdrawal'])}
+                """)
 
     # TAB 5: Efficient Frontier
     with tab5:
