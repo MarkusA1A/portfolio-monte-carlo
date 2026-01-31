@@ -105,17 +105,17 @@ class MarketDataProvider:
             ticker_returns = returns[ticker].dropna()
             ticker_info = yf.Ticker(ticker).info
 
-            mean_daily = ticker_returns.mean()
-            std_daily = ticker_returns.std()
+            mean_daily = float(ticker_returns.mean())
+            std_daily = float(ticker_returns.std())
 
             stats[ticker] = AssetStatistics(
                 ticker=ticker,
                 name=ticker_info.get('shortName', ticker),
-                current_price=prices[ticker].iloc[-1],
+                current_price=float(prices[ticker].iloc[-1]),
                 mean_daily_return=mean_daily,
                 std_daily_return=std_daily,
-                annualized_return=(1 + mean_daily) ** 252 - 1,
-                annualized_volatility=std_daily * np.sqrt(252),
+                annualized_return=float((1 + mean_daily) ** 252 - 1),
+                annualized_volatility=float(std_daily * np.sqrt(252)),
                 historical_returns=ticker_returns
             )
 

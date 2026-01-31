@@ -12,6 +12,8 @@ Eine interaktive Web-Applikation zur Monte Carlo Simulation von Investment-Portf
 - **Rebalancing-Strategien**: Buy & Hold, Periodisch, Threshold
 - **Benchmark-Vergleich**: Portfolio vs. S&P 500, DAX, etc.
 - **Sparplan-Simulation**: Monatliche Einzahlungen simulieren
+- **Entnahme-Simulation**: Ruhestandsplanung – "Wie lange reicht mein Geld?"
+- **Efficient Frontier**: Automatische Portfolio-Optimierung (Markowitz)
 - **Szenario-Analyse**: Bull/Bear/Crash-Szenarien testen
 - **Export**: Excel und CSV Reports
 - **Interaktive Visualisierungen**: Simulationspfade, VaR-Kegel, Korrelations-Heatmaps
@@ -55,10 +57,12 @@ portfolio-monte-carlo/
 │   ├── simulation/
 │   │   ├── monte_carlo.py      # Monte Carlo Engine
 │   │   ├── savings_plan.py     # Sparplan-Simulation
+│   │   ├── withdrawal.py       # Entnahme-Simulation
 │   │   └── scenarios.py        # Szenario-Analyse
 │   ├── portfolio/
 │   │   ├── portfolio.py        # Portfolio & Asset Klassen
-│   │   └── rebalancing.py      # Rebalancing-Strategien
+│   │   ├── rebalancing.py      # Rebalancing-Strategien
+│   │   └── optimization.py     # Efficient Frontier
 │   ├── data/
 │   │   └── market_data.py      # Yahoo Finance Integration
 │   ├── risk/

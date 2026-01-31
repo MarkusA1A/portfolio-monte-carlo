@@ -446,3 +446,298 @@ def plot_scenario_comparison(
     )
 
     return fig
+
+
+def plot_efficient_frontier(
+    frontier_result,
+    current_weights: Optional[np.ndarray] = None,
+    current_return: Optional[float] = None,
+    current_volatility: Optional[float] = None,
+    ticker_symbols: Optional[list[str]] = None
+) -> go.Figure:
+    """
+    Plot the Efficient Frontier with optimal portfolios.
+
+    Args:
+        frontier_result: EfficientFrontierResult object
+        current_weights: Current portfolio weights (optional)
+        current_return: Current portfolio expected return (optional)
+        current_volatility: Current portfolio volatility (optional)
+        ticker_symbols: List of ticker symbols for labels
+
+    Returns:
+        Plotly figure
+    """
+    fig = go.Figure()
+
+    # Scatter plot of random portfolios, colored by Sharpe Ratio
+    fig.add_trace(go.Scatter(
+        x=frontier_result.all_portfolios_volatilities * 100,
+        y=frontier_result.all_portfolios_returns * 100,
+        mode='markers',
+        marker=dict(
+            size=5,
+            color=frontier_result.all_portfolios_sharpe,
+            colorscale='Viridis',
+            colorbar=dict(title='Sharpe Ratio'),
+            opacity=0.5
+        ),
+        name='Zufällige Portfolios',
+        hovertemplate='Volatilität: %{x:.1f}%<br>Rendite: %{y:.1f}%<extra></extra>'
+    ))
+
+    # Efficient Frontier line
+    fig.add_trace(go.Scatter(
+        x=frontier_result.frontier_volatilities * 100,
+        y=frontier_result.frontier_returns * 100,
+        mode='lines',
+        line=dict(color='red', width=3),
+        name='Efficient Frontier',
+        hovertemplate='Volatilität: %{x:.1f}%<br>Rendite: %{y:.1f}%<extra></extra>'
+    ))
+
+    # Maximum Sharpe Ratio Portfolio
+    max_sharpe = frontier_result.max_sharpe_portfolio
+    fig.add_trace(go.Scatter(
+        x=[max_sharpe.volatility * 100],
+        y=[max_sharpe.expected_return * 100],
+        mode='markers',
+        marker=dict(size=20, color='gold', symbol='star', line=dict(width=2, color='black')),
+        name=f'Max Sharpe ({max_sharpe.sharpe_ratio:.2f})',
+        hovertemplate=f'<b>Maximale Sharpe Ratio</b><br>Volatilität: {max_sharpe.volatility*100:.1f}%<br>Rendite: {max_sharpe.expected_return*100:.1f}%<br>Sharpe: {max_sharpe.sharpe_ratio:.2f}<extra></extra>'
+    ))
+
+    # Minimum Volatility Portfolio
+    min_vol = frontier_result.min_volatility_portfolio
+    fig.add_trace(go.Scatter(
+        x=[min_vol.volatility * 100],
+        y=[min_vol.expected_return * 100],
+        mode='markers',
+        marker=dict(size=15, color='blue', symbol='diamond', line=dict(width=2, color='white')),
+        name=f'Min Volatilität ({min_vol.volatility*100:.1f}%)',
+        hovertemplate=f'<b>Minimale Volatilität</b><br>Volatilität: {min_vol.volatility*100:.1f}%<br>Rendite: {min_vol.expected_return*100:.1f}%<br>Sharpe: {min_vol.sharpe_ratio:.2f}<extra></extra>'
+    ))
+
+    # Current Portfolio (if provided)
+    if current_volatility is not None and current_return is not None:
+        fig.add_trace(go.Scatter(
+            x=[current_volatility * 100],
+            y=[current_return * 100],
+            mode='markers',
+            marker=dict(size=15, color='red', symbol='circle', line=dict(width=2, color='white')),
+            name='Aktuelles Portfolio',
+            hovertemplate=f'<b>Aktuelles Portfolio</b><br>Volatilität: {current_volatility*100:.1f}%<br>Rendite: {current_return*100:.1f}%<extra></extra>'
+        ))
+
+    fig.update_layout(
+        title='Efficient Frontier - Rendite vs. Risiko',
+        xaxis_title='Volatilität (Risiko) %',
+        yaxis_title='Erwartete Rendite %',
+        xaxis_ticksuffix='%',
+        yaxis_ticksuffix='%',
+        hovermode='closest',
+        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01)
+    )
+
+    return fig
+
+
+def plot_withdrawal_simulation(
+    results,
+    num_paths: int = 100,
+    show_percentiles: bool = True
+) -> go.Figure:
+    """
+    Plot withdrawal simulation paths.
+
+    Args:
+        results: WithdrawalResults object
+        num_paths: Number of sample paths to display
+        show_percentiles: Whether to show percentile bands
+
+    Returns:
+        Plotly figure
+    """
+    fig = go.Figure()
+
+    months = np.arange(results.portfolio_paths.shape[1])
+    years = months / 12
+
+    # Plot sample paths
+    sample_indices = np.random.choice(
+        results.n_simulations,
+        size=min(num_paths, results.n_simulations),
+        replace=False
+    )
+
+    for idx in sample_indices:
+        color = 'rgba(100, 149, 237, 0.2)' if results.portfolio_paths[idx, -1] > 0 else 'rgba(255, 100, 100, 0.2)'
+        fig.add_trace(go.Scatter(
+            x=years,
+            y=results.portfolio_paths[idx],
+            mode='lines',
+            line=dict(width=0.5, color=color),
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+
+    # Add percentile bands
+    if show_percentiles:
+        percentiles = [5, 25, 50, 75, 95]
+        colors = ['rgba(255, 0, 0, 0.8)', 'rgba(255, 165, 0, 0.8)',
+                  'rgba(0, 128, 0, 1)', 'rgba(255, 165, 0, 0.8)', 'rgba(255, 0, 0, 0.8)']
+
+        for p, color in zip(percentiles, colors):
+            percentile_values = np.percentile(results.portfolio_paths, p, axis=0)
+            fig.add_trace(go.Scatter(
+                x=years,
+                y=percentile_values,
+                mode='lines',
+                name=f'{p}. Perzentil',
+                line=dict(width=2 if p == 50 else 1, color=color, dash='solid' if p == 50 else 'dash'),
+            ))
+
+    # Add zero line
+    fig.add_hline(y=0, line_dash="dash", line_color="black", annotation_text="Vermögen erschöpft")
+
+    fig.update_layout(
+        title='Entnahme-Simulation - Vermögensentwicklung',
+        xaxis_title='Jahre',
+        yaxis_title='Portfolio Wert (€)',
+        yaxis_tickformat=',.0f',
+        hovermode='x unified',
+        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01)
+    )
+
+    return fig
+
+
+def plot_depletion_histogram(
+    results,
+) -> go.Figure:
+    """
+    Plot histogram of portfolio depletion times.
+
+    Args:
+        results: WithdrawalResults object
+
+    Returns:
+        Plotly figure
+    """
+    fig = go.Figure()
+
+    # Get depletion times in years (only for failed simulations)
+    depletion_times_years = results.depletion_times[results.depletion_times < np.inf] / 12
+
+    if len(depletion_times_years) > 0:
+        fig.add_trace(go.Histogram(
+            x=depletion_times_years,
+            nbinsx=30,
+            name='Erschöpfungszeit',
+            marker_color='rgba(255, 100, 100, 0.7)',
+            opacity=0.7
+        ))
+
+        # Add median line if available
+        if results.median_depletion_time is not None:
+            median_years = results.median_depletion_time / 12
+            fig.add_vline(
+                x=median_years,
+                line_dash="dash",
+                line_color="red",
+                annotation_text=f"Median: {median_years:.1f} Jahre"
+            )
+
+    fig.update_layout(
+        title=f'Verteilung der Erschöpfungszeiten (Misserfolgsrate: {results.failure_rate*100:.1f}%)',
+        xaxis_title='Jahre bis zur Erschöpfung',
+        yaxis_title='Häufigkeit',
+        showlegend=False
+    )
+
+    return fig
+
+
+def plot_success_rate_gauge(
+    success_rate: float
+) -> go.Figure:
+    """
+    Create a gauge chart showing success rate.
+
+    Args:
+        success_rate: Success rate between 0 and 1
+
+    Returns:
+        Plotly figure
+    """
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=success_rate * 100,
+        domain={'x': [0, 1], 'y': [0, 1]},
+        title={'text': "Erfolgsquote"},
+        number={'suffix': '%'},
+        gauge={
+            'axis': {'range': [0, 100]},
+            'bar': {'color': "darkgreen" if success_rate >= 0.9 else "orange" if success_rate >= 0.7 else "red"},
+            'steps': [
+                {'range': [0, 70], 'color': 'rgba(255, 100, 100, 0.3)'},
+                {'range': [70, 90], 'color': 'rgba(255, 200, 100, 0.3)'},
+                {'range': [90, 100], 'color': 'rgba(100, 200, 100, 0.3)'}
+            ],
+            'threshold': {
+                'line': {'color': "black", 'width': 4},
+                'thickness': 0.75,
+                'value': 95
+            }
+        }
+    ))
+
+    fig.update_layout(
+        height=300
+    )
+
+    return fig
+
+
+def plot_optimal_weights(
+    weights: np.ndarray,
+    ticker_symbols: list[str],
+    title: str = "Optimale Portfolio-Gewichtung"
+) -> go.Figure:
+    """
+    Plot optimal portfolio weights as bar chart.
+
+    Args:
+        weights: Array of weights
+        ticker_symbols: List of ticker symbols
+        title: Chart title
+
+    Returns:
+        Plotly figure
+    """
+    # Filter out zero weights
+    non_zero_mask = weights > 0.001
+    filtered_weights = weights[non_zero_mask]
+    filtered_tickers = [t for t, m in zip(ticker_symbols, non_zero_mask) if m]
+
+    colors = px.colors.qualitative.Set2[:len(filtered_tickers)]
+
+    fig = go.Figure(data=[
+        go.Bar(
+            x=filtered_tickers,
+            y=filtered_weights * 100,
+            marker_color=colors,
+            text=[f'{w*100:.1f}%' for w in filtered_weights],
+            textposition='auto'
+        )
+    ])
+
+    fig.update_layout(
+        title=title,
+        xaxis_title='Asset',
+        yaxis_title='Gewichtung (%)',
+        yaxis_ticksuffix='%',
+        showlegend=False
+    )
+
+    return fig

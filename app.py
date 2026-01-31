@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from src.simulation.monte_carlo import MonteCarloSimulator
 from src.simulation.savings_plan import SavingsPlanSimulator
 from src.simulation.scenarios import SCENARIOS, ScenarioType, Scenario
+from src.simulation.withdrawal import WithdrawalSimulator, calculate_required_capital
 from src.data.market_data import MarketDataProvider
 from src.portfolio.rebalancing import (
     NoRebalancing,
@@ -23,6 +24,7 @@ from src.portfolio.rebalancing import (
     ThresholdRebalancing,
     RebalanceFrequency
 )
+from src.portfolio.optimization import PortfolioOptimizer, optimize_portfolio_from_data
 from src.risk.var import calculate_var, calculate_cvar
 from src.risk.metrics import (
     calculate_sharpe_ratio,
@@ -38,7 +40,12 @@ from src.visualization.charts import (
     plot_var_cone,
     plot_correlation_heatmap,
     plot_portfolio_weights,
-    plot_drawdown
+    plot_drawdown,
+    plot_efficient_frontier,
+    plot_withdrawal_simulation,
+    plot_depletion_histogram,
+    plot_success_rate_gauge,
+    plot_optimal_weights
 )
 from src.export.reports import create_excel_report, create_csv_report
 
@@ -80,7 +87,7 @@ st.title("📈 Monte Carlo Portfolio Simulation")
 
 # Initialize session state
 for key in ['portfolio', 'results', 'loaded_config', 'benchmark_data',
-            'savings_results', 'scenario_results']:
+            'savings_results', 'scenario_results', 'efficient_frontier', 'withdrawal_results']:
     if key not in st.session_state:
         st.session_state[key] = None
 
@@ -398,7 +405,7 @@ if run_simulation:
             st.session_state.savings_results = savings_results
 
         # Scenario analysis
-        progress.progress(80, text="Führe Szenario-Analyse durch...")
+        progress.progress(70, text="Führe Szenario-Analyse durch...")
         scenario_results = {}
         for scenario_type, scenario in SCENARIOS.items():
             modified_portfolio = portfolio.copy()
@@ -413,6 +420,19 @@ if run_simulation:
             scenario_results[scenario.name] = scenario_sim.run_simulation(modified_portfolio)
         st.session_state.scenario_results = scenario_results
 
+        # Efficient Frontier calculation
+        progress.progress(90, text="Berechne Efficient Frontier...")
+        try:
+            # Get historical returns from portfolio
+            returns_matrix = portfolio._get_historical_returns_matrix()
+            if returns_matrix is not None:
+                import pandas as pd
+                returns_df = pd.DataFrame(returns_matrix, columns=portfolio.tickers)
+                frontier_result = optimize_portfolio_from_data(returns_df, risk_free_rate)
+                st.session_state.efficient_frontier = frontier_result
+        except Exception as e:
+            st.session_state.efficient_frontier = None
+
         progress.progress(100, text="Fertig!")
         st.success("Simulation abgeschlossen!")
 
@@ -422,10 +442,12 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
     portfolio = st.session_state.portfolio
 
     # Create tabs for different views
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
         "📊 Übersicht",
         "📈 Benchmark",
         "💰 Sparplan",
+        "🏦 Entnahme",
+        "🎯 Efficient Frontier",
         "🎭 Szenarien",
         "📥 Export"
     ])
@@ -530,9 +552,11 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
             with col2:
                 st.subheader(f"Benchmark ({benchmark_ticker})")
-                st.metric("Ann. Rendite", f"{benchmark_data.annualized_return*100:.1f}%")
-                st.metric("Ann. Volatilität", f"{benchmark_data.annualized_volatility*100:.1f}%")
-                bench_sharpe = (benchmark_data.annualized_return - risk_free_rate) / benchmark_data.annualized_volatility
+                bench_return = float(benchmark_data.annualized_return)
+                bench_vol = float(benchmark_data.annualized_volatility)
+                st.metric("Ann. Rendite", f"{bench_return*100:.1f}%")
+                st.metric("Ann. Volatilität", f"{bench_vol*100:.1f}%")
+                bench_sharpe = (bench_return - risk_free_rate) / bench_vol if bench_vol > 0 else 0
                 st.metric("Sharpe Ratio", f"{bench_sharpe:.2f}")
 
             # Calculate Beta and Alpha
@@ -635,8 +659,324 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
         else:
             st.info("Aktivieren Sie den Sparplan in der Seitenleiste, um die Simulation zu starten.")
 
-    # TAB 4: Scenario Analysis
+    # TAB 4: Withdrawal Simulation (Entnahme)
     with tab4:
+        st.header("🏦 Entnahme-Simulation (Ruhestandsplanung)")
+
+        st.markdown("""
+        **Wie lange reicht mein Geld?** Simulieren Sie, wie sich Ihr Vermögen entwickelt,
+        wenn Sie regelmäßig Geld entnehmen (z.B. im Ruhestand).
+        """)
+
+        # Input parameters
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            withdrawal_initial = st.number_input(
+                "Anfangsvermögen (€)",
+                min_value=10000,
+                max_value=100000000,
+                value=500000,
+                step=10000,
+                key="withdrawal_initial"
+            )
+
+        with col2:
+            monthly_withdrawal = st.number_input(
+                "Monatliche Entnahme (€)",
+                min_value=100,
+                max_value=100000,
+                value=2000,
+                step=100,
+                key="monthly_withdrawal"
+            )
+
+        with col3:
+            withdrawal_years = st.slider(
+                "Simulationszeitraum (Jahre)",
+                min_value=5,
+                max_value=50,
+                value=30,
+                key="withdrawal_years"
+            )
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            withdrawal_return = st.slider(
+                "Erwartete Rendite (% p.a.)",
+                min_value=0.0,
+                max_value=15.0,
+                value=6.0,
+                step=0.5,
+                key="withdrawal_return"
+            ) / 100
+
+        with col2:
+            withdrawal_volatility = st.slider(
+                "Volatilität (% p.a.)",
+                min_value=5.0,
+                max_value=40.0,
+                value=15.0,
+                step=1.0,
+                key="withdrawal_volatility"
+            ) / 100
+
+        with col3:
+            withdrawal_inflation = st.slider(
+                "Inflation (% p.a.)",
+                min_value=0.0,
+                max_value=10.0,
+                value=2.0,
+                step=0.5,
+                key="withdrawal_inflation"
+            ) / 100
+
+        adjust_for_inflation = st.checkbox(
+            "Entnahme an Inflation anpassen",
+            value=True,
+            help="Erhöht die Entnahme jährlich um die Inflationsrate, um die Kaufkraft zu erhalten"
+        )
+
+        # Calculate withdrawal rate
+        annual_withdrawal = monthly_withdrawal * 12
+        withdrawal_rate = annual_withdrawal / withdrawal_initial * 100
+
+        st.info(f"**Entnahmerate**: {withdrawal_rate:.1f}% p.a. (Die '4%-Regel' gilt als konservativ)")
+
+        if st.button("🏦 Entnahme simulieren", key="run_withdrawal"):
+            with st.spinner("Simuliere Entnahme-Szenarien..."):
+                simulator = WithdrawalSimulator(n_simulations=5000)
+
+                withdrawal_results = simulator.simulate(
+                    initial_value=withdrawal_initial,
+                    monthly_withdrawal=monthly_withdrawal,
+                    expected_annual_return=withdrawal_return,
+                    annual_volatility=withdrawal_volatility,
+                    years=withdrawal_years,
+                    inflation_rate=withdrawal_inflation,
+                    adjust_for_inflation=adjust_for_inflation
+                )
+
+                st.session_state.withdrawal_results = withdrawal_results
+
+        # Display results
+        if st.session_state.withdrawal_results is not None:
+            wr = st.session_state.withdrawal_results
+
+            st.markdown("---")
+            st.subheader("Ergebnisse")
+
+            # Success rate gauge
+            col1, col2 = st.columns([1, 2])
+
+            with col1:
+                fig_gauge = plot_success_rate_gauge(wr.success_rate)
+                st.plotly_chart(fig_gauge, use_container_width=True)
+
+                st.markdown(f"""
+                **Interpretation:**
+                - ✅ **{wr.success_rate*100:.1f}%** der Simulationen: Geld reicht
+                - ❌ **{wr.failure_rate*100:.1f}%** der Simulationen: Geld geht aus
+                """)
+
+            with col2:
+                # Key metrics
+                cols = st.columns(3)
+                with cols[0]:
+                    st.metric("Median Endwert", f"€{wr.median_final_value:,.0f}")
+                with cols[1]:
+                    st.metric("Gesamtentnahme (Median)", f"€{wr.total_withdrawn_median:,.0f}")
+                with cols[2]:
+                    if wr.earliest_depletion:
+                        st.metric("Früheste Erschöpfung", f"{wr.earliest_depletion/12:.1f} Jahre")
+                    else:
+                        st.metric("Früheste Erschöpfung", "Nie")
+
+            # Charts
+            st.subheader("Vermögensentwicklung")
+            fig_paths = plot_withdrawal_simulation(wr)
+            st.plotly_chart(fig_paths, use_container_width=True)
+
+            # Percentile analysis
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.subheader("Endwert-Perzentile")
+                perc_data = {
+                    'Perzentil': ['5%', '25%', '50% (Median)', '75%', '95%'],
+                    'Endwert': [
+                        f"€{wr.percentile_5:,.0f}",
+                        f"€{wr.percentile_25:,.0f}",
+                        f"€{wr.percentile_50:,.0f}",
+                        f"€{wr.percentile_75:,.0f}",
+                        f"€{wr.percentile_95:,.0f}"
+                    ]
+                }
+                st.dataframe(pd.DataFrame(perc_data), use_container_width=True)
+
+            with col2:
+                if wr.failure_rate > 0:
+                    st.subheader("Erschöpfungszeit-Verteilung")
+                    fig_depletion = plot_depletion_histogram(wr)
+                    st.plotly_chart(fig_depletion, use_container_width=True)
+                else:
+                    st.success("In allen Simulationen reicht das Vermögen bis zum Ende des Zeitraums!")
+
+            # SWR Calculator
+            st.markdown("---")
+            st.subheader("💡 Sichere Entnahmerate berechnen")
+
+            target_success = st.slider(
+                "Gewünschte Erfolgsquote",
+                min_value=0.80,
+                max_value=0.99,
+                value=0.95,
+                step=0.01,
+                format="%.0f%%",
+                key="target_success"
+            )
+
+            if st.button("Sichere Entnahmerate berechnen", key="calc_swr"):
+                with st.spinner("Berechne optimale Entnahmerate..."):
+                    simulator = WithdrawalSimulator(n_simulations=3000)
+                    swr_result = simulator.find_safe_withdrawal_rate(
+                        initial_value=withdrawal_initial,
+                        expected_annual_return=withdrawal_return,
+                        annual_volatility=withdrawal_volatility,
+                        years=withdrawal_years,
+                        target_success_rate=target_success,
+                        inflation_rate=withdrawal_inflation,
+                        adjust_for_inflation=adjust_for_inflation
+                    )
+
+                    st.success(f"""
+                    **Ergebnis für {target_success*100:.0f}% Erfolgswahrscheinlichkeit:**
+
+                    - 💰 **Sichere monatliche Entnahme**: €{swr_result['monthly_withdrawal']:,.0f}
+                    - 📊 **Sichere Entnahmerate (SWR)**: {swr_result['withdrawal_rate_pct']:.2f}% p.a.
+                    - 📅 **Jährliche Entnahme**: €{swr_result['annual_withdrawal']:,.0f}
+                    """)
+
+    # TAB 5: Efficient Frontier
+    with tab5:
+        st.header("🎯 Efficient Frontier - Portfolio-Optimierung")
+
+        st.markdown("""
+        Die **Efficient Frontier** (Effizienzgrenze) zeigt alle optimalen Portfolio-Kombinationen.
+        Kein anderes Portfolio bietet bei gleichem Risiko mehr Rendite oder bei gleicher Rendite weniger Risiko.
+        """)
+
+        frontier_result = st.session_state.efficient_frontier
+
+        if frontier_result is not None:
+            # Plot the efficient frontier
+            current_return = portfolio.annualized_expected_return()
+            current_vol = portfolio.annualized_expected_volatility()
+
+            fig_frontier = plot_efficient_frontier(
+                frontier_result,
+                current_weights=portfolio.weights,
+                current_return=current_return,
+                current_volatility=current_vol,
+                ticker_symbols=portfolio.tickers
+            )
+            st.plotly_chart(fig_frontier, use_container_width=True)
+
+            # Optimal portfolios comparison
+            st.markdown("---")
+            st.subheader("Optimale Portfolios")
+
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                st.markdown("### 🔴 Aktuelles Portfolio")
+                st.metric("Erwartete Rendite", f"{current_return*100:.1f}%")
+                st.metric("Volatilität", f"{current_vol*100:.1f}%")
+                current_sharpe = (current_return - risk_free_rate) / current_vol if current_vol > 0 else 0
+                st.metric("Sharpe Ratio", f"{current_sharpe:.2f}")
+
+                st.markdown("**Gewichtung:**")
+                for ticker, weight in zip(portfolio.tickers, portfolio.weights):
+                    if weight > 0.001:
+                        st.write(f"- {ticker}: {weight*100:.1f}%")
+
+            with col2:
+                st.markdown("### ⭐ Max Sharpe Portfolio")
+                max_sharpe = frontier_result.max_sharpe_portfolio
+                st.metric("Erwartete Rendite", f"{max_sharpe.expected_return*100:.1f}%")
+                st.metric("Volatilität", f"{max_sharpe.volatility*100:.1f}%")
+                st.metric("Sharpe Ratio", f"{max_sharpe.sharpe_ratio:.2f}")
+
+                st.markdown("**Optimale Gewichtung:**")
+                for ticker, weight in max_sharpe.get_weights_dict().items():
+                    if weight > 0.001:
+                        st.write(f"- {ticker}: {weight*100:.1f}%")
+
+            with col3:
+                st.markdown("### 💎 Min Volatilität Portfolio")
+                min_vol = frontier_result.min_volatility_portfolio
+                st.metric("Erwartete Rendite", f"{min_vol.expected_return*100:.1f}%")
+                st.metric("Volatilität", f"{min_vol.volatility*100:.1f}%")
+                st.metric("Sharpe Ratio", f"{min_vol.sharpe_ratio:.2f}")
+
+                st.markdown("**Optimale Gewichtung:**")
+                for ticker, weight in min_vol.get_weights_dict().items():
+                    if weight > 0.001:
+                        st.write(f"- {ticker}: {weight*100:.1f}%")
+
+            # Optimal weights visualization
+            st.markdown("---")
+            st.subheader("Gewichtungsvergleich")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                fig_max_sharpe = plot_optimal_weights(
+                    max_sharpe.weights,
+                    portfolio.tickers,
+                    "Max Sharpe Ratio Portfolio"
+                )
+                st.plotly_chart(fig_max_sharpe, use_container_width=True)
+
+            with col2:
+                fig_min_vol = plot_optimal_weights(
+                    min_vol.weights,
+                    portfolio.tickers,
+                    "Minimum Volatilität Portfolio"
+                )
+                st.plotly_chart(fig_min_vol, use_container_width=True)
+
+            # Interpretation
+            st.markdown("---")
+            with st.expander("📚 Interpretation der Efficient Frontier"):
+                st.markdown("""
+                ### Was zeigt der Chart?
+
+                - **Bunte Punkte**: Zufällig generierte Portfolios (Farbe = Sharpe Ratio)
+                - **Rote Linie**: Die Efficient Frontier - alle optimalen Kombinationen
+                - **Goldener Stern**: Portfolio mit der höchsten Sharpe Ratio (bestes Rendite/Risiko-Verhältnis)
+                - **Blauer Diamant**: Portfolio mit der niedrigsten Volatilität
+                - **Roter Kreis**: Ihr aktuelles Portfolio
+
+                ### Empfehlungen
+
+                1. **Liegt Ihr Portfolio unter der roten Linie?** Dann gibt es bessere Kombinationen!
+                2. **Max Sharpe Portfolio**: Ideal, wenn Sie das beste Verhältnis von Rendite zu Risiko wollen
+                3. **Min Volatilität Portfolio**: Ideal, wenn Sie ruhig schlafen möchten
+
+                ### Einschränkungen
+
+                - Die Optimierung basiert auf **historischen Daten** - die Zukunft kann anders sein
+                - Keine Berücksichtigung von Transaktionskosten beim Umschichten
+                - Extreme Gewichtungen (z.B. 90% in einer Aktie) können unrealistisch sein
+                """)
+
+        else:
+            st.warning("Die Efficient Frontier konnte nicht berechnet werden. Starten Sie eine Simulation mit mindestens 2 Assets.")
+
+    # TAB 6: Scenario Analysis
+    with tab6:
         st.header("🎭 Szenario-Analyse")
 
         scenario_results = st.session_state.scenario_results
@@ -692,8 +1032,8 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
         else:
             st.info("Starten Sie eine Simulation, um Szenarien zu analysieren.")
 
-    # TAB 5: Export
-    with tab5:
+    # TAB 7: Export
+    with tab7:
         st.header("📥 Export")
 
         col1, col2 = st.columns(2)
@@ -802,6 +1142,8 @@ else:
         - 📊 **Monte Carlo Simulation**: Tausende Szenarien
         - 📈 **Benchmark-Vergleich**: vs. S&P 500/DAX
         - 💰 **Sparplan**: Monatliche Einzahlungen
+        - 🏦 **Entnahme-Simulation**: Ruhestandsplanung
+        - 🎯 **Efficient Frontier**: Portfolio-Optimierung
         - 🎭 **Szenarien**: Bull/Bear/Crash-Analyse
         - 📥 **Export**: Excel & CSV Reports
         """)
@@ -954,6 +1296,77 @@ else:
         - **Erwarteter Endwert**: Was Sie am Ende wahrscheinlich haben
         - **Gewinn**: Endwert minus Einzahlungen = Ihr Renditegewinn
         - **Visualisierung**: Rote Linie = Ihre Einzahlungen, Grüne Linie = erwarteter Wert
+        """)
+
+    with st.expander("🏦 Entnahme-Simulation erklärt"):
+        st.markdown("""
+        ### Wofür ist die Entnahme-Simulation?
+
+        Die wichtigste Frage für die Ruhestandsplanung: **"Wie lange reicht mein Geld,
+        wenn ich jeden Monat X Euro entnehme?"**
+
+        ### Die 4%-Regel
+
+        Eine bekannte Faustregel besagt: Sie können etwa **4% Ihres Vermögens pro Jahr
+        entnehmen**, ohne dass es innerhalb von 30 Jahren aufgebraucht wird (mit hoher
+        Wahrscheinlichkeit). Bei 500.000€ wären das 20.000€/Jahr oder ~1.670€/Monat.
+
+        ### Was simuliert die App?
+
+        - Tausende mögliche Verläufe der Börse
+        - Monatliche Entnahmen (optional an Inflation angepasst)
+        - In wie vielen Szenarien das Geld reicht (Erfolgsquote)
+        - Wann das Geld im schlimmsten Fall aufgebraucht ist
+
+        ### Wichtige Kennzahlen
+
+        | Kennzahl | Bedeutung |
+        |----------|-----------|
+        | **Erfolgsquote** | In wie viel % der Simulationen reicht das Geld |
+        | **Entnahmerate** | Jährliche Entnahme / Anfangsvermögen |
+        | **Sichere Entnahmerate (SWR)** | Rate, bei der z.B. 95% Erfolgswahrscheinlichkeit erreicht wird |
+
+        ### Inflation anpassen?
+
+        Wenn aktiviert, steigt Ihre monatliche Entnahme jedes Jahr um die Inflationsrate.
+        Das erhält Ihre **Kaufkraft**, aber das Geld geht schneller aus.
+        """)
+
+    with st.expander("🎯 Efficient Frontier erklärt"):
+        st.markdown("""
+        ### Was ist die Efficient Frontier?
+
+        Die Efficient Frontier (Effizienzgrenze) ist ein zentrales Konzept der
+        **Modernen Portfolio-Theorie** von Harry Markowitz (Nobelpreis 1990).
+
+        Die Idee: Bei mehreren Aktien können Sie das Risiko **durch kluge Gewichtung reduzieren**,
+        ohne die erwartete Rendite zu senken – das nennt man **Diversifikation**.
+
+        ### Was zeigt der Chart?
+
+        - **X-Achse**: Risiko (Volatilität) des Portfolios
+        - **Y-Achse**: Erwartete Rendite des Portfolios
+        - **Jeder Punkt**: Eine mögliche Kombination von Gewichtungen
+
+        ### Die rote Linie (Efficient Frontier)
+
+        Portfolios auf dieser Linie sind **optimal**:
+        - Kein anderes Portfolio bietet bei gleichem Risiko mehr Rendite
+        - Kein anderes Portfolio bietet bei gleicher Rendite weniger Risiko
+
+        ### Besondere Portfolios
+
+        | Portfolio | Bedeutung | Für wen? |
+        |-----------|-----------|----------|
+        | **Max Sharpe** ⭐ | Bestes Rendite/Risiko-Verhältnis | Die meisten Anleger |
+        | **Min Volatilität** 💎 | Geringstes Risiko | Konservative Anleger |
+
+        ### Einschränkungen
+
+        - Basiert auf **historischen Daten** – Zukunft kann anders sein
+        - Optimale Gewichtungen können sich schnell ändern
+        - Transaktionskosten beim Umschichten nicht berücksichtigt
+        - Extreme Gewichtungen (z.B. 90% in einer Aktie) sind praktisch problematisch
         """)
 
     with st.expander("⚠️ Wichtige Hinweise & Limitationen"):
