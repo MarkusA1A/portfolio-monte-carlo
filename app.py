@@ -4,8 +4,10 @@ Monte Carlo Portfolio Simulation - Streamlit Web Application
 import streamlit as st
 import numpy as np
 import pandas as pd
+import json
 import sys
 from pathlib import Path
+from datetime import datetime
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -50,26 +52,106 @@ if 'portfolio' not in st.session_state:
     st.session_state.portfolio = None
 if 'results' not in st.session_state:
     st.session_state.results = None
+if 'loaded_config' not in st.session_state:
+    st.session_state.loaded_config = None
+
+
+def create_portfolio_config(
+    tickers: list[str],
+    weights: dict[str, float],
+    initial_value: float,
+    num_simulations: int,
+    time_horizon_years: int,
+    data_period: str,
+    rebalancing_option: str,
+    confidence_level: float,
+    risk_free_rate: float,
+    name: str = ""
+) -> dict:
+    """Create a portfolio configuration dictionary."""
+    return {
+        "name": name or f"Portfolio_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        "created_at": datetime.now().isoformat(),
+        "portfolio": {
+            "tickers": tickers,
+            "weights": {t: weights[t] for t in tickers},
+            "initial_value": initial_value
+        },
+        "simulation": {
+            "num_simulations": num_simulations,
+            "time_horizon_years": time_horizon_years,
+            "data_period": data_period
+        },
+        "rebalancing": rebalancing_option,
+        "risk": {
+            "confidence_level": confidence_level,
+            "risk_free_rate": risk_free_rate
+        }
+    }
+
+
+def load_portfolio_config(config: dict) -> dict:
+    """Parse and validate a portfolio configuration."""
+    try:
+        return {
+            "tickers": config["portfolio"]["tickers"],
+            "weights": config["portfolio"]["weights"],
+            "initial_value": config["portfolio"]["initial_value"],
+            "num_simulations": config["simulation"]["num_simulations"],
+            "time_horizon_years": config["simulation"]["time_horizon_years"],
+            "data_period": config["simulation"]["data_period"],
+            "rebalancing_option": config["rebalancing"],
+            "confidence_level": config["risk"]["confidence_level"],
+            "risk_free_rate": config["risk"]["risk_free_rate"],
+            "name": config.get("name", "Unnamed Portfolio")
+        }
+    except KeyError as e:
+        raise ValueError(f"Ungültiges Portfolio-Format: Feld {e} fehlt")
 
 # Sidebar - Configuration
 with st.sidebar:
     st.header("⚙️ Konfiguration")
 
+    # Portfolio Load/Save Section
+    st.subheader("💾 Portfolio Laden/Speichern")
+
+    uploaded_file = st.file_uploader(
+        "Portfolio laden",
+        type=["json"],
+        help="Laden Sie eine gespeicherte Portfolio-Konfiguration"
+    )
+
+    if uploaded_file is not None:
+        try:
+            config_data = json.load(uploaded_file)
+            st.session_state.loaded_config = load_portfolio_config(config_data)
+            st.success(f"Portfolio '{st.session_state.loaded_config['name']}' geladen!")
+        except Exception as e:
+            st.error(f"Fehler beim Laden: {e}")
+            st.session_state.loaded_config = None
+
+    # Use loaded config or defaults
+    loaded = st.session_state.loaded_config
+
+    st.markdown("---")
+
     # Portfolio Settings
     st.subheader("Portfolio")
 
+    default_tickers = ", ".join(loaded["tickers"]) if loaded else "AAPL, MSFT, GOOGL, AMZN"
     tickers_input = st.text_input(
         "Ticker-Symbole (kommasepariert)",
-        value="AAPL, MSFT, GOOGL, AMZN",
+        value=default_tickers,
         help="z.B. AAPL, MSFT, GOOGL"
     )
     tickers = [t.strip().upper() for t in tickers_input.split(",") if t.strip()]
 
+    default_initial = loaded["initial_value"] if loaded else 100000
     initial_value = st.number_input(
         "Anfangskapital (€)",
         min_value=1000,
         max_value=100000000,
-        value=100000,
+        value=default_initial,
         step=10000
     )
 
@@ -80,13 +162,19 @@ with st.sidebar:
     remaining = 100.0
 
     for i, ticker in enumerate(tickers):
+        # Get default weight from loaded config or calculate equal weight
+        if loaded and ticker in loaded["weights"]:
+            default_weight = loaded["weights"][ticker] * 100
+        else:
+            default_weight = 100.0 / len(tickers)
+
         if i == len(tickers) - 1:
             # Last ticker gets remaining weight
             weight = remaining
             st.text(f"{ticker}: {weight:.1f}%")
         else:
             max_weight = min(remaining, 100.0)
-            default = min(100.0 / len(tickers), remaining)
+            default = min(default_weight, remaining)
             weight = st.slider(
                 f"{ticker}",
                 min_value=0.0,
@@ -101,65 +189,109 @@ with st.sidebar:
     # Simulation Settings
     st.subheader("Simulation")
 
+    sim_options = [1000, 5000, 10000, 25000, 50000]
+    default_sim = loaded["num_simulations"] if loaded and loaded["num_simulations"] in sim_options else 10000
     num_simulations = st.select_slider(
         "Anzahl Simulationen",
-        options=[1000, 5000, 10000, 25000, 50000],
-        value=10000
+        options=sim_options,
+        value=default_sim
     )
 
+    default_horizon = loaded["time_horizon_years"] if loaded else 1
     time_horizon_years = st.slider(
         "Zeithorizont (Jahre)",
         min_value=1,
         max_value=10,
-        value=1
+        value=default_horizon
     )
     time_horizon_days = time_horizon_years * 252
 
+    period_options = ["1y", "2y", "5y", "10y"]
+    default_period_idx = period_options.index(loaded["data_period"]) if loaded and loaded["data_period"] in period_options else 2
     data_period = st.selectbox(
         "Historische Daten",
-        options=["1y", "2y", "5y", "10y"],
-        index=2,
+        options=period_options,
+        index=default_period_idx,
         help="Zeitraum für Berechnung der Statistiken"
     )
 
     # Rebalancing Settings
     st.subheader("Rebalancing")
 
+    rebalancing_options = [
+        "Kein Rebalancing (Buy & Hold)",
+        "Monatlich",
+        "Quartalsweise",
+        "Jährlich",
+        "Threshold (5%)",
+        "Threshold (10%)"
+    ]
+    default_rebal_idx = rebalancing_options.index(loaded["rebalancing_option"]) if loaded and loaded["rebalancing_option"] in rebalancing_options else 0
     rebalancing_option = st.selectbox(
         "Strategie",
-        options=[
-            "Kein Rebalancing (Buy & Hold)",
-            "Monatlich",
-            "Quartalsweise",
-            "Jährlich",
-            "Threshold (5%)",
-            "Threshold (10%)"
-        ],
-        index=0
+        options=rebalancing_options,
+        index=default_rebal_idx
     )
 
     # Risk Settings
     st.subheader("Risiko")
 
+    default_conf = loaded["confidence_level"] if loaded else 0.95
     confidence_level = st.slider(
         "Konfidenzlevel für VaR/CVaR",
         min_value=0.90,
         max_value=0.99,
-        value=0.95,
+        value=default_conf,
         step=0.01
     )
 
+    default_rf = loaded["risk_free_rate"] * 100 if loaded else 4.0
     risk_free_rate = st.number_input(
         "Risikofreier Zinssatz (%)",
         min_value=0.0,
         max_value=10.0,
-        value=4.0,
+        value=default_rf,
         step=0.1
     ) / 100
 
     # Run button
     st.markdown("---")
     run_simulation = st.button("🚀 Simulation starten", type="primary", use_container_width=True)
+
+    # Save Portfolio Section
+    st.markdown("---")
+    st.subheader("💾 Portfolio speichern")
+
+    portfolio_name = st.text_input(
+        "Portfolio-Name",
+        value=loaded["name"] if loaded else "",
+        placeholder="Mein Portfolio"
+    )
+
+    # Create config for download
+    current_config = create_portfolio_config(
+        tickers=tickers,
+        weights=weights,
+        initial_value=initial_value,
+        num_simulations=num_simulations,
+        time_horizon_years=time_horizon_years,
+        data_period=data_period,
+        rebalancing_option=rebalancing_option,
+        confidence_level=confidence_level,
+        risk_free_rate=risk_free_rate,
+        name=portfolio_name
+    )
+
+    config_json = json.dumps(current_config, indent=2, ensure_ascii=False)
+    filename = f"{portfolio_name or 'portfolio'}_{datetime.now().strftime('%Y%m%d')}.json"
+
+    st.download_button(
+        label="📥 Portfolio herunterladen",
+        data=config_json,
+        file_name=filename,
+        mime="application/json",
+        use_container_width=True
+    )
 
 # Map rebalancing option to strategy
 def get_rebalancing_strategy(option: str):
