@@ -75,7 +75,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for responsive design
+# Custom CSS for responsive design (Mobile: iPhone, iPad)
 st.markdown("""
 <style>
     /* Responsive metrics */
@@ -85,18 +85,91 @@ st.markdown("""
     [data-testid="stMetricLabel"] {
         font-size: clamp(0.7rem, 1.5vw, 0.9rem);
     }
-    /* Better mobile sidebar */
-    @media (max-width: 768px) {
-        [data-testid="stSidebar"] {
-            min-width: 100%;
-        }
-        .stTabs [data-baseweb="tab-list"] {
-            flex-wrap: wrap;
-        }
-    }
+
     /* Responsive charts */
     .js-plotly-plot {
         width: 100% !important;
+    }
+
+    /* === MOBILE STYLES (iPhone, small screens) === */
+    @media (max-width: 768px) {
+        /* Sidebar takes full width on mobile */
+        [data-testid="stSidebar"] {
+            min-width: 100%;
+        }
+
+        /* Tabs wrap on mobile */
+        .stTabs [data-baseweb="tab-list"] {
+            flex-wrap: wrap;
+            gap: 0.25rem;
+        }
+        .stTabs [data-baseweb="tab"] {
+            font-size: 0.8rem;
+            padding: 0.5rem 0.75rem;
+        }
+
+        /* Columns stack vertically on mobile */
+        [data-testid="column"] {
+            width: 100% !important;
+            flex: 1 1 100% !important;
+        }
+
+        /* Smaller titles */
+        h1 { font-size: 1.5rem !important; }
+        h2 { font-size: 1.25rem !important; }
+        h3 { font-size: 1.1rem !important; }
+
+        /* Better touch targets for sliders */
+        .stSlider [data-baseweb="slider"] {
+            padding: 1rem 0;
+        }
+
+        /* Metrics in smaller cards */
+        [data-testid="stMetricValue"] {
+            font-size: 1.1rem;
+        }
+
+        /* Number inputs more touch-friendly */
+        .stNumberInput input {
+            font-size: 16px !important; /* Prevents iOS zoom on focus */
+            padding: 0.75rem;
+        }
+
+        /* Better button touch targets */
+        .stButton button {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            width: 100%;
+        }
+    }
+
+    /* === TABLET STYLES (iPad) === */
+    @media (min-width: 769px) and (max-width: 1024px) {
+        [data-testid="stSidebar"] {
+            min-width: 280px;
+        }
+
+        .stTabs [data-baseweb="tab"] {
+            font-size: 0.9rem;
+        }
+    }
+
+    /* === TOUCH DEVICE IMPROVEMENTS === */
+    @media (hover: none) and (pointer: coarse) {
+        /* Larger touch targets */
+        .stSlider [data-baseweb="slider"] {
+            min-height: 44px;
+        }
+
+        /* Easier to tap checkboxes */
+        .stCheckbox label {
+            padding: 0.5rem 0;
+        }
+
+        /* Select boxes more touch-friendly */
+        .stSelectbox [data-baseweb="select"] {
+            min-height: 44px;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -230,36 +303,65 @@ with st.sidebar:
     # Weight configuration
     st.subheader("Gewichtungen")
 
-    # Collect slider values first
+    # Initialize session state for weights if needed
+    if 'ticker_weights' not in st.session_state:
+        st.session_state.ticker_weights = {}
+
+    # Clean up old tickers from session state
+    current_tickers = set(tickers)
+    st.session_state.ticker_weights = {
+        k: v for k, v in st.session_state.ticker_weights.items()
+        if k in current_tickers
+    }
+
+    # Collect weights with automatic capping
     slider_values = {}
     for i, ticker in enumerate(tickers):
-        if loaded and ticker in loaded["weights"]:
+        # Calculate how much is already used by previous tickers
+        used_by_previous = sum(slider_values.values())
+        max_available = max(0.0, 100.0 - used_by_previous)
+
+        # Get default value
+        if ticker in st.session_state.ticker_weights:
+            default_weight = st.session_state.ticker_weights[ticker]
+        elif loaded and ticker in loaded["weights"]:
             default_weight = loaded["weights"][ticker] * 100
         else:
-            default_weight = 100.0 / len(tickers) if tickers else 25.0
+            # Distribute remaining equally among remaining tickers
+            remaining_tickers = len(tickers) - i
+            default_weight = max_available / remaining_tickers if remaining_tickers > 0 else 0
 
-        if i < len(tickers) - 1:
-            # All tickers except the last one get a slider
-            weight = st.slider(
-                f"{ticker}",
-                min_value=0.0,
-                max_value=100.0,
-                value=min(default_weight, 100.0),
-                step=1.0,
-                key=f"weight_{ticker}"
-            )
-            slider_values[ticker] = weight
-        else:
-            # Last ticker: calculate remaining
-            used = sum(slider_values.values())
-            remaining = max(0.0, 100.0 - used)
-            st.text(f"{ticker}: {remaining:.1f}% (Rest)")
-            slider_values[ticker] = remaining
+        # Cap default to max available
+        default_weight = min(default_weight, max_available)
 
-    # Show total
+        # Create slider for ALL tickers
+        weight = st.slider(
+            f"{ticker}",
+            min_value=0.0,
+            max_value=100.0,
+            value=default_weight,
+            step=1.0,
+            key=f"weight_{ticker}_{i}"  # Unique key
+        )
+
+        # Auto-cap if exceeds available
+        if weight > max_available:
+            weight = max_available
+            st.caption(f"↳ Auf {weight:.1f}% begrenzt (max. verfügbar)")
+
+        slider_values[ticker] = weight
+        st.session_state.ticker_weights[ticker] = weight
+
+    # Show total and status
     total = sum(slider_values.values())
-    if total != 100.0:
-        st.warning(f"⚠️ Summe: {total:.1f}% - bitte Gewichtungen anpassen")
+    remaining = 100.0 - total
+
+    if remaining > 0.1:
+        st.info(f"📊 Summe: {total:.1f}% | Noch {remaining:.1f}% verfügbar")
+    elif remaining < -0.1:
+        st.warning(f"⚠️ Summe: {total:.1f}% - zu viel vergeben!")
+    else:
+        st.success(f"✅ Summe: 100%")
 
     # Convert to decimal weights (normalize to ensure sum = 1)
     if total > 0:
