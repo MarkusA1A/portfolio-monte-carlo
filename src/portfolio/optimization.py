@@ -52,7 +52,8 @@ class PortfolioOptimizer:
         expected_returns: np.ndarray,
         covariance_matrix: np.ndarray,
         ticker_symbols: list[str],
-        risk_free_rate: float = 0.04
+        risk_free_rate: float = 0.04,
+        random_seed: Optional[int] = None
     ):
         """
         Args:
@@ -60,12 +61,14 @@ class PortfolioOptimizer:
             covariance_matrix: Kovarianzmatrix der Renditen (annualisiert)
             ticker_symbols: Liste der Ticker-Symbole
             risk_free_rate: Risikofreier Zinssatz (Default: 4%)
+            random_seed: Seed für Reproduzierbarkeit
         """
         self.expected_returns = np.array(expected_returns)
         self.cov_matrix = np.array(covariance_matrix)
         self.ticker_symbols = ticker_symbols
         self.risk_free_rate = risk_free_rate
         self.n_assets = len(expected_returns)
+        self.rng = np.random.default_rng(random_seed)
 
     def _portfolio_return(self, weights: np.ndarray) -> float:
         """Berechnet die erwartete Portfolio-Rendite."""
@@ -112,7 +115,7 @@ class PortfolioOptimizer:
         best_sharpe = -np.inf
 
         for _ in range(10):
-            init_weights = np.random.dirichlet(np.ones(self.n_assets))
+            init_weights = self.rng.dirichlet(np.ones(self.n_assets))
 
             result = minimize(
                 self._negative_sharpe,
@@ -282,7 +285,7 @@ class PortfolioOptimizer:
         random_sharpe = []
 
         for _ in range(n_random):
-            weights = np.random.dirichlet(np.ones(self.n_assets))
+            weights = self.rng.dirichlet(np.ones(self.n_assets))
             ret = self._portfolio_return(weights)
             vol = self._portfolio_volatility(weights)
             sharpe = self._portfolio_sharpe(weights)

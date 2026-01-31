@@ -85,8 +85,7 @@ class WithdrawalSimulator:
         """
         self.n_simulations = n_simulations
         self.random_seed = random_seed
-        if random_seed is not None:
-            np.random.seed(random_seed)
+        self.rng = np.random.default_rng(random_seed)
 
     def simulate(
         self,
@@ -157,7 +156,7 @@ class WithdrawalSimulator:
                     continue
 
                 # Rendite für diesen Monat
-                monthly_r = np.random.normal(monthly_return, monthly_volatility)
+                monthly_r = self.rng.normal(monthly_return, monthly_volatility)
                 current_value *= (1 + monthly_r)
 
                 # Wert kann nicht negativ werden
