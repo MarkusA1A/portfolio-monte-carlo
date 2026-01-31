@@ -67,6 +67,20 @@ def format_number(value: float, decimals: int = 0) -> str:
         return f"{value:,.{decimals}f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
+def parse_german_number(text: str, default: int = 0) -> int:
+    """Parse German-formatted number (dots as thousand separators) to integer."""
+    if not text:
+        return default
+    # Remove dots (thousand separators) and spaces
+    cleaned = text.replace(".", "").replace(" ", "").replace("€", "")
+    # Replace comma with dot for decimals (if any)
+    cleaned = cleaned.replace(",", ".")
+    try:
+        return int(float(cleaned))
+    except ValueError:
+        return default
+
+
 # Page configuration - responsive layout
 st.set_page_config(
     page_title="Portfolio Monte Carlo Simulation",
@@ -304,14 +318,18 @@ with st.sidebar:
     tickers = [t.strip().upper() for t in tickers_input.split(",") if t.strip()]
 
     default_initial = loaded["initial_value"] if loaded else 100000
-    initial_value = st.number_input(
+    initial_value_str = st.text_input(
         "Anfangskapital (€)",
-        min_value=1000,
-        max_value=100000000,
-        value=default_initial,
-        step=10000
+        value=format_number(default_initial),
+        help="z.B. 100.000 oder 1.000.000"
     )
-    st.caption(f"💰 {format_currency(initial_value)}")
+    initial_value = parse_german_number(initial_value_str, default_initial)
+    if initial_value < 1000:
+        initial_value = 1000
+        st.warning("Mindestkapital: €1.000")
+    elif initial_value > 100000000:
+        initial_value = 100000000
+        st.warning("Maximalkapital: €100.000.000")
 
     # Benchmark selection
     benchmark_ticker = st.selectbox(
@@ -897,24 +915,24 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
         col1, col2, col3 = st.columns(3)
 
         with col1:
-            withdrawal_initial = st.number_input(
+            withdrawal_initial_str = st.text_input(
                 "Anfangsvermögen (€)",
-                min_value=10000,
-                max_value=100000000,
-                value=500000,
-                step=10000,
-                key="withdrawal_initial"
+                value=format_number(500000),
+                key="withdrawal_initial",
+                help="z.B. 500.000"
             )
+            withdrawal_initial = parse_german_number(withdrawal_initial_str, 500000)
+            withdrawal_initial = max(10000, min(100000000, withdrawal_initial))
 
         with col2:
-            monthly_withdrawal = st.number_input(
+            monthly_withdrawal_str = st.text_input(
                 "Monatliche Entnahme (€)",
-                min_value=100,
-                max_value=100000,
-                value=2000,
-                step=100,
-                key="monthly_withdrawal"
+                value=format_number(2000),
+                key="monthly_withdrawal",
+                help="z.B. 2.000"
             )
+            monthly_withdrawal = parse_german_number(monthly_withdrawal_str, 2000)
+            monthly_withdrawal = max(100, min(100000, monthly_withdrawal))
 
         col1, col2, col3 = st.columns(3)
 
