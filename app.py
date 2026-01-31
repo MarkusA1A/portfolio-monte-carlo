@@ -252,18 +252,19 @@ def estimate_memory_mb(num_simulations: int, time_horizon_days: int, num_assets:
     """
     Estimate memory usage for Monte Carlo simulation in MB.
 
+    Optimized version using float32 (4 bytes) and no price_paths storage.
     Main arrays:
-    - price_paths: (num_simulations, time_horizon + 1, num_assets) * 8 bytes
-    - uncorrelated_randoms: (num_simulations, time_horizon, num_assets) * 8 bytes
-    - portfolio_values: (num_simulations, time_horizon + 1) * 8 bytes
+    - daily_returns: (num_simulations, time_horizon, num_assets) * 4 bytes
+    - portfolio_values: (num_simulations, time_horizon + 1) * 4 bytes
     """
-    bytes_per_float = 8
-    price_paths = num_simulations * (time_horizon_days + 1) * num_assets * bytes_per_float
-    randoms = num_simulations * time_horizon_days * num_assets * bytes_per_float
+    bytes_per_float = 4  # Using float32 now
+    daily_returns = num_simulations * time_horizon_days * num_assets * bytes_per_float
     portfolio_values = num_simulations * (time_horizon_days + 1) * bytes_per_float
 
-    # Add ~50% overhead for intermediate calculations and scenario analysis
-    total_bytes = (price_paths + randoms + portfolio_values) * 1.5
+    # Add overhead for scenario analysis (6 scenarios with reduced simulations)
+    scenario_overhead = 6 * min(num_simulations, 3000) * (time_horizon_days + 1) * bytes_per_float
+
+    total_bytes = daily_returns + portfolio_values + scenario_overhead
 
     return total_bytes / (1024 * 1024)  # Convert to MB
 
