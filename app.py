@@ -564,7 +564,9 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 portfolio_hist = portfolio._get_historical_returns_matrix()
                 if portfolio_hist is not None:
                     portfolio_returns = np.sum(portfolio_hist * portfolio.weights, axis=1)
-                    bench_returns = benchmark_data.historical_returns.values[-len(portfolio_returns):]
+                    bench_returns_raw = benchmark_data.historical_returns.values[-len(portfolio_returns):]
+                    # Ensure bench_returns is 1D
+                    bench_returns = bench_returns_raw.flatten() if bench_returns_raw.ndim > 1 else bench_returns_raw
 
                     if len(bench_returns) == len(portfolio_returns):
                         beta = calculate_beta(portfolio_returns, bench_returns)
