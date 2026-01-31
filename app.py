@@ -383,11 +383,12 @@ with st.sidebar:
     st.subheader("Simulation")
 
     sim_options = [1000, 5000, 10000, 25000, 50000]
-    default_sim = loaded["num_simulations"] if loaded and loaded["num_simulations"] in sim_options else 10000
+    default_sim = loaded["num_simulations"] if loaded and loaded["num_simulations"] in sim_options else 5000
     num_simulations = st.select_slider(
         "Anzahl Simulationen",
         options=sim_options,
-        value=default_sim
+        value=default_sim,
+        help="5.000 Simulationen bieten ca. 1,4% statistische Genauigkeit – ausreichend, da die Unsicherheit in historischen Marktdaten deutlich größer ist."
     )
 
     default_horizon = loaded["time_horizon_years"] if loaded else 1
