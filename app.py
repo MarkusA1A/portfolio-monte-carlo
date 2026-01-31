@@ -49,6 +49,24 @@ from src.visualization.charts import (
 )
 from src.export.reports import create_excel_report, create_csv_report
 
+
+def format_currency(value: float, decimals: int = 0) -> str:
+    """Format number with German-style thousands separator (.) and currency symbol."""
+    if decimals == 0:
+        formatted = f"{value:,.0f}".replace(",", ".")
+    else:
+        formatted = f"{value:,.{decimals}f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    return f"€{formatted}"
+
+
+def format_number(value: float, decimals: int = 0) -> str:
+    """Format number with German-style thousands separator (.)."""
+    if decimals == 0:
+        return f"{value:,.0f}".replace(",", ".")
+    else:
+        return f"{value:,.{decimals}f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
 # Page configuration - responsive layout
 st.set_page_config(
     page_title="Portfolio Monte Carlo Simulation",
@@ -199,6 +217,7 @@ with st.sidebar:
         value=default_initial,
         step=10000
     )
+    st.caption(f"💰 {format_currency(initial_value)}")
 
     # Benchmark selection
     benchmark_ticker = st.selectbox(
@@ -211,8 +230,7 @@ with st.sidebar:
     # Weight configuration
     st.subheader("Gewichtungen")
 
-    weights = {}
-    remaining = 100.0
+    raw_weights = {}
 
     for i, ticker in enumerate(tickers):
         if loaded and ticker in loaded["weights"]:
@@ -220,22 +238,24 @@ with st.sidebar:
         else:
             default_weight = 100.0 / len(tickers) if tickers else 25.0
 
-        if i == len(tickers) - 1:
-            weight = remaining
-            st.text(f"{ticker}: {weight:.1f}%")
-        else:
-            max_weight = min(remaining, 100.0)
-            default = min(default_weight, remaining)
-            weight = st.slider(
-                f"{ticker}",
-                min_value=0.0,
-                max_value=max_weight,
-                value=default,
-                step=1.0,
-                key=f"weight_{ticker}"
-            )
-            remaining -= weight
-        weights[ticker] = weight / 100.0
+        weight = st.slider(
+            f"{ticker}",
+            min_value=0.0,
+            max_value=100.0,
+            value=min(default_weight, 100.0),
+            step=1.0,
+            key=f"weight_{ticker}"
+        )
+        raw_weights[ticker] = weight
+
+    # Normalize weights to sum to 100%
+    total_weight = sum(raw_weights.values())
+    if total_weight > 0:
+        weights = {t: w / total_weight for t, w in raw_weights.items()}
+        if abs(total_weight - 100.0) > 0.1:
+            st.caption(f"⚖️ Gewichtungen normalisiert (Summe war {total_weight:.1f}%)")
+    else:
+        weights = {t: 1.0 / len(tickers) for t in tickers} if tickers else {}
 
     # Simulation Settings
     st.subheader("Simulation")
@@ -492,13 +512,13 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
         # First row
         cols = st.columns(4)
         with cols[0]:
-            st.metric("Erwarteter Endwert", f"€{results.mean_final_value:,.0f}", f"{results.mean_return*100:+.1f}%")
+            st.metric("Erwarteter Endwert", format_currency(results.mean_final_value), f"{results.mean_return*100:+.1f}%")
         with cols[1]:
-            st.metric("Median Endwert", f"€{results.median_final_value:,.0f}", f"{(results.median_final_value/initial_value - 1)*100:+.1f}%")
+            st.metric("Median Endwert", format_currency(results.median_final_value), f"{(results.median_final_value/initial_value - 1)*100:+.1f}%")
         with cols[2]:
-            st.metric(f"VaR ({confidence_level:.0%})", f"€{var_value:,.0f}")
+            st.metric(f"VaR ({confidence_level:.0%})", format_currency(var_value))
         with cols[3]:
-            st.metric(f"CVaR ({confidence_level:.0%})", f"€{cvar_value:,.0f}")
+            st.metric(f"CVaR ({confidence_level:.0%})", format_currency(cvar_value))
 
         # Second row
         cols = st.columns(4)
@@ -595,13 +615,13 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
             # Summary metrics
             cols = st.columns(4)
             with cols[0]:
-                st.metric("Gesamteinzahlung", f"€{savings_results.total_invested:,.0f}")
+                st.metric("Gesamteinzahlung", format_currency(savings_results.total_invested))
             with cols[1]:
-                st.metric("Erwarteter Endwert", f"€{savings_results.mean_final_value:,.0f}")
+                st.metric("Erwarteter Endwert", format_currency(savings_results.mean_final_value))
             with cols[2]:
-                st.metric("Erwarteter Gewinn", f"€{savings_results.mean_profit:,.0f}", f"{savings_results.mean_return*100:+.1f}%")
+                st.metric("Erwarteter Gewinn", format_currency(savings_results.mean_profit), f"{savings_results.mean_return*100:+.1f}%")
             with cols[3]:
-                st.metric("Median Endwert", f"€{savings_results.median_final_value:,.0f}")
+                st.metric("Median Endwert", format_currency(savings_results.median_final_value))
 
             # Visualization
             st.subheader("Wertentwicklung über Zeit")
@@ -653,8 +673,8 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
             percentiles = [5, 25, 50, 75, 95]
             perc_data = {
                 'Perzentil': [f'{p}%' for p in percentiles],
-                'Endwert': [f"€{savings_results.percentile(p):,.0f}" for p in percentiles],
-                'Gewinn': [f"€{savings_results.percentile(p) - savings_results.total_invested:,.0f}" for p in percentiles]
+                'Endwert': [format_currency(savings_results.percentile(p)) for p in percentiles],
+                'Gewinn': [format_currency(savings_results.percentile(p) - savings_results.total_invested) for p in percentiles]
             }
             st.dataframe(pd.DataFrame(perc_data), use_container_width=True)
 
@@ -786,9 +806,9 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 # Key metrics
                 cols = st.columns(3)
                 with cols[0]:
-                    st.metric("Median Endwert", f"€{wr.median_final_value:,.0f}")
+                    st.metric("Median Endwert", format_currency(wr.median_final_value))
                 with cols[1]:
-                    st.metric("Gesamtentnahme (Median)", f"€{wr.total_withdrawn_median:,.0f}")
+                    st.metric("Gesamtentnahme (Median)", format_currency(wr.total_withdrawn_median))
                 with cols[2]:
                     if wr.earliest_depletion:
                         st.metric("Früheste Erschöpfung", f"{wr.earliest_depletion/12:.1f} Jahre")
@@ -808,11 +828,11 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 perc_data = {
                     'Perzentil': ['5%', '25%', '50% (Median)', '75%', '95%'],
                     'Endwert': [
-                        f"€{wr.percentile_5:,.0f}",
-                        f"€{wr.percentile_25:,.0f}",
-                        f"€{wr.percentile_50:,.0f}",
-                        f"€{wr.percentile_75:,.0f}",
-                        f"€{wr.percentile_95:,.0f}"
+                        format_currency(wr.percentile_5),
+                        format_currency(wr.percentile_25),
+                        format_currency(wr.percentile_50),
+                        format_currency(wr.percentile_75),
+                        format_currency(wr.percentile_95)
                     ]
                 }
                 st.dataframe(pd.DataFrame(perc_data), use_container_width=True)
@@ -855,9 +875,9 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                     st.success(f"""
                     **Ergebnis für {target_success*100:.0f}% Erfolgswahrscheinlichkeit:**
 
-                    - 💰 **Sichere monatliche Entnahme**: €{swr_result['monthly_withdrawal']:,.0f}
+                    - 💰 **Sichere monatliche Entnahme**: {format_currency(swr_result['monthly_withdrawal'])}
                     - 📊 **Sichere Entnahmerate (SWR)**: {swr_result['withdrawal_rate_pct']:.2f}% p.a.
-                    - 📅 **Jährliche Entnahme**: €{swr_result['annual_withdrawal']:,.0f}
+                    - 📅 **Jährliche Entnahme**: {format_currency(swr_result['annual_withdrawal'])}
                     """)
 
     # TAB 5: Efficient Frontier
@@ -1106,14 +1126,14 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 'Verlustwahrscheinlichkeit'
             ],
             'Wert': [
-                f'€{initial_value:,.0f}',
-                f'€{results.mean_final_value:,.0f}',
-                f'€{results.median_final_value:,.0f}',
-                f'€{results.std_final_value:,.0f}',
-                f'€{results.min_value:,.0f}',
-                f'€{results.max_value:,.0f}',
-                f'€{var_value:,.0f}',
-                f'€{cvar_value:,.0f}',
+                format_currency(initial_value),
+                format_currency(results.mean_final_value),
+                format_currency(results.median_final_value),
+                format_currency(results.std_final_value),
+                format_currency(results.min_value),
+                format_currency(results.max_value),
+                format_currency(var_value),
+                format_currency(cvar_value),
                 f'{np.mean(results.final_values > initial_value)*100:.1f}%',
                 f'{np.mean(results.final_values < initial_value)*100:.1f}%'
             ]
