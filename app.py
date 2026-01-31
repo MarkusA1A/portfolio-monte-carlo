@@ -248,6 +248,26 @@ def get_rebalancing_strategy(option: str):
     return strategies.get(option, NoRebalancing())
 
 
+def estimate_memory_mb(num_simulations: int, time_horizon_days: int, num_assets: int) -> float:
+    """
+    Estimate memory usage for Monte Carlo simulation in MB.
+
+    Main arrays:
+    - price_paths: (num_simulations, time_horizon + 1, num_assets) * 8 bytes
+    - uncorrelated_randoms: (num_simulations, time_horizon, num_assets) * 8 bytes
+    - portfolio_values: (num_simulations, time_horizon + 1) * 8 bytes
+    """
+    bytes_per_float = 8
+    price_paths = num_simulations * (time_horizon_days + 1) * num_assets * bytes_per_float
+    randoms = num_simulations * time_horizon_days * num_assets * bytes_per_float
+    portfolio_values = num_simulations * (time_horizon_days + 1) * bytes_per_float
+
+    # Add ~50% overhead for intermediate calculations and scenario analysis
+    total_bytes = (price_paths + randoms + portfolio_values) * 1.5
+
+    return total_bytes / (1024 * 1024)  # Convert to MB
+
+
 # Sidebar - Configuration
 with st.sidebar:
     st.header("⚙️ Konfiguration")
@@ -314,50 +334,29 @@ with st.sidebar:
         if k in current_tickers
     }
 
-    # Collect weights with slider + number input
+    # Initialize weights for new tickers
+    for ticker in tickers:
+        if ticker not in st.session_state.ticker_weights:
+            if loaded and ticker in loaded["weights"]:
+                st.session_state.ticker_weights[ticker] = loaded["weights"][ticker] * 100
+            else:
+                st.session_state.ticker_weights[ticker] = 100.0 / len(tickers) if tickers else 25.0
+
+    # Collect weights with single slider per ticker
     slider_values = {}
     for i, ticker in enumerate(tickers):
-        # Get default value
-        if ticker in st.session_state.ticker_weights:
-            default_weight = st.session_state.ticker_weights[ticker]
-        elif loaded and ticker in loaded["weights"]:
-            default_weight = loaded["weights"][ticker] * 100
-        else:
-            default_weight = 100.0 / len(tickers) if tickers else 25.0
+        current_weight = st.session_state.ticker_weights[ticker]
 
-        # Create two columns: slider (wider) + number input
-        col_slider, col_input = st.columns([3, 1])
-
-        with col_slider:
-            slider_val = st.slider(
-                f"{ticker}",
-                min_value=0.0,
-                max_value=100.0,
-                value=float(default_weight),
-                step=1.0,
-                key=f"slider_{ticker}_{i}",
-                label_visibility="visible"
-            )
-
-        with col_input:
-            input_val = st.number_input(
-                "%",
-                min_value=0.0,
-                max_value=100.0,
-                value=float(default_weight),
-                step=1.0,
-                key=f"input_{ticker}_{i}",
-                label_visibility="collapsed"
-            )
-
-        # Use whichever changed (compare to stored value)
-        stored = st.session_state.ticker_weights.get(ticker, default_weight)
-        if abs(slider_val - stored) > 0.01:
-            weight = slider_val
-        elif abs(input_val - stored) > 0.01:
-            weight = input_val
-        else:
-            weight = slider_val  # Default to slider
+        # Single slider with value display
+        weight = st.slider(
+            f"{ticker}",
+            min_value=0.0,
+            max_value=100.0,
+            value=float(current_weight),
+            step=1.0,
+            format="%.0f%%",
+            key=f"weight_{ticker}_{i}"
+        )
 
         slider_values[ticker] = weight
         st.session_state.ticker_weights[ticker] = weight
@@ -501,6 +500,16 @@ if run_simulation:
     elif abs(sum(weights.values()) - 1.0) > 0.01:
         st.error(f"Gewichtungen müssen 100% ergeben. Aktuell: {sum(weights.values())*100:.1f}%")
     else:
+        # Memory estimation and warning
+        estimated_memory = estimate_memory_mb(num_simulations, time_horizon_days, len(tickers))
+        if estimated_memory > 500:
+            st.warning(
+                f"⚠️ Geschätzter Speicherbedarf: {estimated_memory:.0f} MB. "
+                f"Bei {len(tickers)} Assets, {num_simulations:,} Simulationen und "
+                f"{time_horizon_years} Jahren kann die App langsam werden oder abstürzen. "
+                f"Reduzieren Sie die Simulationsanzahl bei vielen Assets."
+            )
+
         progress = st.progress(0, text="Lade Marktdaten...")
 
         try:
@@ -524,13 +533,25 @@ if run_simulation:
             st.stop()
 
         progress.progress(40, text=f"Führe {num_simulations:,} Simulationen durch...")
-        simulator = MonteCarloSimulator(
-            num_simulations=num_simulations,
-            time_horizon=time_horizon_days
-        )
-        strategy = get_rebalancing_strategy(rebalancing_option)
-        results = simulator.run_simulation(portfolio, strategy)
-        st.session_state.results = results
+        try:
+            simulator = MonteCarloSimulator(
+                num_simulations=num_simulations,
+                time_horizon=time_horizon_days
+            )
+            strategy = get_rebalancing_strategy(rebalancing_option)
+            results = simulator.run_simulation(portfolio, strategy)
+            st.session_state.results = results
+        except MemoryError:
+            st.error(
+                "❌ Nicht genügend Speicher! Bitte reduzieren Sie:\n"
+                "- Anzahl der Simulationen\n"
+                "- Zeithorizont\n"
+                "- Anzahl der Assets"
+            )
+            st.stop()
+        except Exception as e:
+            st.error(f"❌ Fehler bei der Simulation: {e}")
+            st.stop()
 
         # Savings plan simulation
         if enable_savings and monthly_contribution > 0:
@@ -546,21 +567,32 @@ if run_simulation:
             )
             st.session_state.savings_results = savings_results
 
-        # Scenario analysis
+        # Scenario analysis - reduce simulations for large portfolios to prevent memory issues
         progress.progress(70, text="Führe Szenario-Analyse durch...")
         scenario_results = {}
-        for scenario_type, scenario in SCENARIOS.items():
-            modified_portfolio = portfolio.copy()
-            modified_portfolio.adjust_statistics(
-                scenario.return_adjustment,
-                scenario.volatility_multiplier
-            )
-            scenario_sim = MonteCarloSimulator(
-                num_simulations=min(num_simulations, 5000),
-                time_horizon=time_horizon_days
-            )
-            scenario_results[scenario.name] = scenario_sim.run_simulation(modified_portfolio)
-        st.session_state.scenario_results = scenario_results
+        # Scale down scenario simulations based on portfolio size
+        scenario_sims = min(num_simulations, 5000)
+        if len(tickers) > 5:
+            scenario_sims = min(scenario_sims, 3000)
+        if len(tickers) > 8:
+            scenario_sims = min(scenario_sims, 2000)
+
+        try:
+            for scenario_type, scenario in SCENARIOS.items():
+                modified_portfolio = portfolio.copy()
+                modified_portfolio.adjust_statistics(
+                    scenario.return_adjustment,
+                    scenario.volatility_multiplier
+                )
+                scenario_sim = MonteCarloSimulator(
+                    num_simulations=scenario_sims,
+                    time_horizon=time_horizon_days
+                )
+                scenario_results[scenario.name] = scenario_sim.run_simulation(modified_portfolio)
+            st.session_state.scenario_results = scenario_results
+        except Exception as e:
+            st.warning(f"Szenario-Analyse übersprungen: {e}")
+            st.session_state.scenario_results = None
 
         # Efficient Frontier calculation
         progress.progress(90, text="Berechne Efficient Frontier...")
@@ -812,7 +844,41 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
         wenn Sie regelmäßig Geld entnehmen (z.B. im Ruhestand).
         """)
 
-        # Input parameters
+        # Age and time horizon inputs
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            start_age = st.number_input(
+                "Alter bei Entnahmebeginn",
+                min_value=30,
+                max_value=90,
+                value=65,
+                step=1,
+                key="withdrawal_start_age",
+                help="In welchem Alter beginnen Sie mit der Entnahme?"
+            )
+
+        with col2:
+            end_age = st.number_input(
+                "Geplantes Endalter",
+                min_value=50,
+                max_value=110,
+                value=95,
+                step=1,
+                key="withdrawal_end_age",
+                help="Bis zu welchem Alter soll das Geld reichen?"
+            )
+
+        with col3:
+            withdrawal_years = end_age - start_age
+            if withdrawal_years < 1:
+                withdrawal_years = 1
+                st.error("Endalter muss größer als Startalter sein!")
+            st.metric("Entnahmedauer", f"{withdrawal_years} Jahre", help="Automatisch berechnet")
+
+        st.markdown("---")
+
+        # Financial inputs
         col1, col2, col3 = st.columns(3)
 
         with col1:
@@ -833,15 +899,6 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 value=2000,
                 step=100,
                 key="monthly_withdrawal"
-            )
-
-        with col3:
-            withdrawal_years = st.slider(
-                "Simulationszeitraum (Jahre)",
-                min_value=5,
-                max_value=50,
-                value=30,
-                key="withdrawal_years"
             )
 
         col1, col2, col3 = st.columns(3)
@@ -933,9 +990,15 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                     st.metric("Gesamtentnahme (Median)", format_currency(wr.total_withdrawn_median))
                 with cols[2]:
                     if wr.earliest_depletion:
-                        st.metric("Früheste Erschöpfung", f"{wr.earliest_depletion/12:.1f} Jahre")
+                        depletion_years = wr.earliest_depletion / 12
+                        depletion_age = start_age + depletion_years
+                        st.metric(
+                            "Früheste Erschöpfung",
+                            f"mit {depletion_age:.0f} Jahren",
+                            f"nach {depletion_years:.1f} Jahren"
+                        )
                     else:
-                        st.metric("Früheste Erschöpfung", "Nie")
+                        st.metric("Früheste Erschöpfung", "Nie", f"Geld reicht bis {end_age}")
 
             # Charts
             st.subheader("Vermögensentwicklung")
@@ -962,10 +1025,11 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
             with col2:
                 if wr.failure_rate > 0:
                     st.subheader("Erschöpfungszeit-Verteilung")
+                    st.caption(f"Wann geht das Geld aus? (Startalter: {start_age})")
                     fig_depletion = plot_depletion_histogram(wr)
                     st.plotly_chart(fig_depletion, use_container_width=True)
                 else:
-                    st.success("In allen Simulationen reicht das Vermögen bis zum Ende des Zeitraums!")
+                    st.success(f"In allen Simulationen reicht das Vermögen bis zum Alter von {end_age} Jahren!")
 
             # SWR Calculator
             st.markdown("---")
@@ -997,6 +1061,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                     st.success(f"""
                     **Ergebnis für {target_success*100:.0f}% Erfolgswahrscheinlichkeit:**
 
+                    - 👤 **Zeitraum**: Von {start_age} bis {end_age} Jahren ({withdrawal_years} Jahre)
                     - 💰 **Sichere monatliche Entnahme**: {format_currency(swr_result['monthly_withdrawal'])}
                     - 📊 **Sichere Entnahmerate (SWR)**: {swr_result['withdrawal_rate_pct']:.2f}% p.a.
                     - 📅 **Jährliche Entnahme**: {format_currency(swr_result['annual_withdrawal'])}

@@ -66,6 +66,45 @@ class MonteCarloSimulator:
         self.time_horizon = time_horizon  # Trading days
         self.rng = np.random.default_rng(random_seed)
 
+    def _safe_cholesky(self, cov_matrix: np.ndarray, max_tries: int = 5) -> np.ndarray:
+        """
+        Perform Cholesky decomposition with regularization fallback.
+
+        If the covariance matrix is not positive definite (e.g., due to highly
+        correlated assets), adds small regularization to make it decomposable.
+
+        Args:
+            cov_matrix: Covariance matrix
+            max_tries: Maximum number of regularization attempts
+
+        Returns:
+            Lower triangular Cholesky factor
+        """
+        # First try without regularization
+        try:
+            return np.linalg.cholesky(cov_matrix)
+        except np.linalg.LinAlgError:
+            pass
+
+        # Try with increasing regularization
+        n = cov_matrix.shape[0]
+        reg_factor = 1e-8
+
+        for _ in range(max_tries):
+            try:
+                regularized = cov_matrix + np.eye(n) * reg_factor
+                return np.linalg.cholesky(regularized)
+            except np.linalg.LinAlgError:
+                reg_factor *= 10
+
+        # Final fallback: use eigenvalue decomposition
+        eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)
+        # Clip negative eigenvalues to small positive value
+        eigenvalues = np.maximum(eigenvalues, 1e-8)
+        # Reconstruct positive definite matrix
+        cov_fixed = eigenvectors @ np.diag(eigenvalues) @ eigenvectors.T
+        return np.linalg.cholesky(cov_fixed)
+
     def run_simulation(
         self,
         portfolio: "Portfolio",
@@ -88,7 +127,8 @@ class MonteCarloSimulator:
         cov_matrix = portfolio.get_covariance_matrix()
 
         # Generate correlated random returns using Cholesky decomposition
-        cholesky = np.linalg.cholesky(cov_matrix)
+        # Add regularization to handle near-singular covariance matrices
+        cholesky = self._safe_cholesky(cov_matrix)
 
         # Generate uncorrelated standard normal random variables
         uncorrelated_randoms = self.rng.standard_normal(
