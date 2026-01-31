@@ -806,6 +806,187 @@ else:
         - 📥 **Export**: Excel & CSV Reports
         """)
 
+    # Ausführliche Einführung für Laien
+    st.markdown("---")
+    st.header("📚 Einführung: Was ist Monte Carlo Simulation?")
+
+    with st.expander("🎲 Was ist eine Monte Carlo Simulation?", expanded=True):
+        st.markdown("""
+        ### Die Idee dahinter
+
+        Stellen Sie sich vor, Sie werfen eine Münze 10.000 Mal. Sie können nicht vorhersagen,
+        ob bei einem einzelnen Wurf Kopf oder Zahl kommt – aber nach 10.000 Würfen wissen Sie
+        ziemlich genau, dass etwa 50% Kopf waren.
+
+        **Die Monte Carlo Simulation funktioniert genauso:**
+
+        Anstatt zu versuchen, die Zukunft der Börse vorherzusagen (unmöglich!), simulieren wir
+        tausende mögliche Zukunftsverläufe basierend auf historischen Daten. Jede Simulation
+        ist wie ein "Was wäre wenn"-Szenario.
+
+        ### Warum ist das nützlich?
+
+        - **Risiko verstehen**: Sie sehen nicht nur den "erwarteten" Gewinn, sondern auch,
+          wie schlecht es im Worst Case laufen könnte
+        - **Wahrscheinlichkeiten**: "Mit 95% Wahrscheinlichkeit verliere ich nicht mehr als X Euro"
+        - **Entscheidungshilfe**: Ist mein Portfolio zu riskant? Soll ich anders gewichten?
+
+        ### Wie funktioniert es technisch?
+
+        1. Wir laden **historische Kursdaten** Ihrer gewählten Aktien
+        2. Daraus berechnen wir **Durchschnittsrenditen** und **Volatilität** (Schwankungsbreite)
+        3. Wir würfeln zufällige Tagesrenditen, die statistisch zu den historischen Daten passen
+        4. Das wiederholen wir **10.000 Mal** für den gesamten Zeithorizont
+        5. Am Ende haben wir 10.000 mögliche Endwerte – und können Statistiken darüber berechnen
+        """)
+
+    with st.expander("📊 Eingaben erklärt: Was bedeuten die Felder?"):
+        st.markdown("""
+        ### Portfolio-Einstellungen
+
+        | Eingabe | Erklärung | Beispiel |
+        |---------|-----------|----------|
+        | **Ticker-Symbole** | Börsenkürzel der Aktien/ETFs. Finden Sie auf Yahoo Finance. | AAPL = Apple, MSFT = Microsoft, VOO = S&P 500 ETF |
+        | **Anfangskapital** | Wie viel Geld Sie investieren möchten | 100.000 € |
+        | **Gewichtungen** | Wie Sie Ihr Geld auf die Aktien verteilen | 40% Apple, 30% Microsoft, 30% Google |
+        | **Benchmark** | Ein Vergleichsindex, um Ihre Performance einzuordnen | SPY = S&P 500, ^GDAXI = DAX |
+
+        ### Simulation
+
+        | Eingabe | Erklärung | Empfehlung |
+        |---------|-----------|------------|
+        | **Anzahl Simulationen** | Wie oft wir die Zukunft "durchspielen" | 10.000 ist ein guter Standard |
+        | **Zeithorizont** | Wie viele Jahre in die Zukunft simulieren | Ihr tatsächlicher Anlagehorizont |
+        | **Historische Daten** | Zeitraum für die Berechnung der Statistiken | 5 Jahre ist ein guter Kompromiss |
+
+        ### Rebalancing
+
+        **Was ist Rebalancing?** Wenn eine Aktie stark steigt, verschiebt sich Ihre Gewichtung.
+        Rebalancing bedeutet: Regelmäßig zurück zur Zielgewichtung.
+
+        | Strategie | Bedeutung |
+        |-----------|-----------|
+        | **Buy & Hold** | Einmal kaufen, nie umschichten – einfach, aber Gewichte driften |
+        | **Monatlich/Quartalsweise** | Regelmäßig zur Zielgewichtung zurückkehren |
+        | **Threshold 5%/10%** | Nur umschichten, wenn Abweichung > 5% oder 10% |
+
+        ### Risiko-Einstellungen
+
+        | Eingabe | Erklärung |
+        |---------|-----------|
+        | **Konfidenzlevel** | Für VaR/CVaR: "Mit 95% Sicherheit verliere ich nicht mehr als..." |
+        | **Risikofreier Zinssatz** | Rendite einer "sicheren" Anlage (z.B. Staatsanleihen). Wird für Sharpe Ratio verwendet. |
+        """)
+
+    with st.expander("📈 Ergebnisse erklärt: Was bedeuten die Kennzahlen?"):
+        st.markdown("""
+        ### Basis-Kennzahlen
+
+        | Kennzahl | Bedeutung | Gut oder schlecht? |
+        |----------|-----------|-------------------|
+        | **Erwarteter Endwert** | Durchschnitt aller 10.000 Simulationen | Höher = besser |
+        | **Median Endwert** | Der "mittlere" Wert (50% sind besser, 50% schlechter) | Oft realistischer als Durchschnitt |
+        | **Minimum/Maximum** | Best Case und Worst Case aus allen Simulationen | Zeigt die Bandbreite |
+
+        ### Risiko-Kennzahlen
+
+        | Kennzahl | Bedeutung | Beispiel |
+        |----------|-----------|----------|
+        | **VaR (Value at Risk)** | "Mit 95% Wahrscheinlichkeit verliere ich nicht mehr als X" | VaR 95% = -15.000€ bedeutet: In 95 von 100 Fällen ist der Verlust kleiner |
+        | **CVaR (Conditional VaR)** | "Wenn es schlecht läuft, wie schlecht im Schnitt?" | Immer schlechter als VaR – zeigt das "Tail Risk" |
+        | **Max Drawdown** | Größter Verlust vom Höchststand | 30% = Portfolio fiel mal um 30% vom Höchststand |
+        | **Volatilität** | Wie stark schwankt der Wert? | 20% = typische Aktien-Volatilität |
+
+        ### Performance-Kennzahlen
+
+        | Kennzahl | Bedeutung | Interpretation |
+        |----------|-----------|----------------|
+        | **Sharpe Ratio** | Rendite pro Risikoeinheit | > 1 = gut, > 2 = sehr gut |
+        | **Sortino Ratio** | Wie Sharpe, aber nur Abwärtsrisiko zählt | Besser für asymmetrische Renditen |
+        | **Alpha** | Überrendite gegenüber dem Markt | > 0% = Sie schlagen den Markt |
+        | **Beta** | Sensitivität zum Markt | 1.0 = wie Markt, 1.5 = 50% mehr Schwankung |
+
+        ### Perzentile verstehen
+
+        - **5. Perzentil**: "In 5% der Fälle war das Ergebnis schlechter als dieser Wert"
+        - **50. Perzentil**: Der Median – die Hälfte ist besser, die Hälfte schlechter
+        - **95. Perzentil**: "In 5% der Fälle war das Ergebnis besser als dieser Wert"
+        """)
+
+    with st.expander("🎭 Szenarien erklärt"):
+        st.markdown("""
+        ### Was sind die Szenarien?
+
+        Zusätzlich zur normalen Simulation testen wir Ihr Portfolio unter verschiedenen
+        Marktbedingungen:
+
+        | Szenario | Beschreibung | Rendite-Anpassung | Volatilität |
+        |----------|--------------|-------------------|-------------|
+        | **Bullenmarkt** | Starkes Wirtschaftswachstum, Optimismus | +8% p.a. | -20% |
+        | **Normal** | Durchschnittliche Bedingungen | ±0% | ±0% |
+        | **Bärenmarkt** | Wirtschaftliche Abschwächung | -10% p.a. | +30% |
+        | **Crash** | Schwere Krise (wie 2008, 2020) | -30% p.a. | +150% |
+        | **Hohe Volatilität** | Unsichere Märkte | -2% p.a. | +100% |
+        | **Stagflation** | Niedrige Renditen, hohe Inflation | -5% p.a. | +50% |
+
+        **Warum ist das wichtig?**
+
+        Sie sehen, wie Ihr Portfolio in Krisenzeiten reagieren würde.
+        Ein Portfolio, das im Crash-Szenario 60% verliert, ist vielleicht zu riskant.
+        """)
+
+    with st.expander("💰 Sparplan erklärt"):
+        st.markdown("""
+        ### Was ist ein Sparplan?
+
+        Statt einmalig zu investieren, zahlen Sie **jeden Monat einen festen Betrag** ein.
+        Das nennt man auch "Cost Averaging" oder "Durchschnittskosteneffekt".
+
+        ### Vorteile
+
+        - **Geringeres Timing-Risiko**: Sie kaufen mal teuer, mal günstig – im Schnitt OK
+        - **Disziplin**: Automatisches Sparen ohne Emotionen
+        - **Einstieg mit wenig Kapital**: Sie brauchen nicht sofort 100.000€
+
+        ### Was zeigt die Simulation?
+
+        - **Gesamteinzahlung**: Ihre Summe aller monatlichen Beiträge + Anfangskapital
+        - **Erwarteter Endwert**: Was Sie am Ende wahrscheinlich haben
+        - **Gewinn**: Endwert minus Einzahlungen = Ihr Renditegewinn
+        - **Visualisierung**: Rote Linie = Ihre Einzahlungen, Grüne Linie = erwarteter Wert
+        """)
+
+    with st.expander("⚠️ Wichtige Hinweise & Limitationen"):
+        st.markdown("""
+        ### Was diese Simulation NICHT kann
+
+        1. **Die Zukunft vorhersagen**: Wir simulieren basierend auf der Vergangenheit.
+           Die Zukunft kann völlig anders sein!
+
+        2. **Schwarze Schwäne berücksichtigen**: Ereignisse wie COVID-19 oder die
+           Finanzkrise 2008 sind in historischen Daten selten – und in der Zukunft
+           könnten ganz neue Krisen auftreten.
+
+        3. **Steuern und Gebühren**: Die Simulation ignoriert Transaktionskosten,
+           Depotgebühren und Steuern auf Gewinne.
+
+        4. **Währungsrisiken**: Bei US-Aktien haben Sie als Euro-Anleger auch ein
+           Dollar/Euro-Risiko.
+
+        ### Wie sollten Sie die Ergebnisse nutzen?
+
+        - **Zur Orientierung**, nicht als exakte Prognose
+        - **Zum Vergleich** verschiedener Portfolio-Zusammensetzungen
+        - **Zum Risikoverständnis**: Können Sie einen 30% Verlust verkraften?
+        - **Als Diskussionsgrundlage** mit einem Finanzberater
+
+        ### Keine Anlageberatung!
+
+        Diese App ist ein **Bildungs- und Planungstool**. Sie ersetzt keine
+        professionelle Finanzberatung. Investieren Sie nie Geld, das Sie
+        kurzfristig brauchen könnten!
+        """)
+
 # Footer
 st.markdown("---")
 st.caption("Monte Carlo Portfolio Simulation | Yahoo Finance Daten | Made with Streamlit")
