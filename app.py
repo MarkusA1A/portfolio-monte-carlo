@@ -1068,15 +1068,16 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
             st.markdown("---")
             st.subheader("💡 Sichere Entnahmerate berechnen")
 
-            target_success = st.slider(
+            target_success_pct = st.slider(
                 "Gewünschte Erfolgsquote",
-                min_value=0.80,
-                max_value=0.99,
-                value=0.95,
-                step=0.01,
-                format="%.0f%%",
+                min_value=80,
+                max_value=99,
+                value=95,
+                step=1,
+                format="%d%%",
                 key="target_success"
             )
+            target_success = target_success_pct / 100.0
 
             if st.button("Sichere Entnahmerate berechnen", key="calc_swr"):
                 with st.spinner("Berechne optimale Entnahmerate..."):
