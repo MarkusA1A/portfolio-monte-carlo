@@ -990,19 +990,25 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
             with col1:
                 st.subheader("Portfolio")
-                st.metric("Ann. Rendite", f"{portfolio.annualized_expected_return()*100:.1f}%")
-                st.metric("Ann. Volatilität", f"{portfolio.annualized_expected_volatility()*100:.1f}%")
-                st.metric("Sharpe Ratio", f"{sharpe:.2f}")
+                st.metric("Ann. Rendite", f"{portfolio.annualized_expected_return()*100:.1f}%",
+                    help="Annualisierte (jährliche) Rendite: Die durchschnittliche Rendite pro Jahr, hochgerechnet aus den historischen Daten. Zeigt, wie viel Ihr Portfolio im Schnitt pro Jahr gewonnen oder verloren hat.")
+                st.metric("Ann. Volatilität", f"{portfolio.annualized_expected_volatility()*100:.1f}%",
+                    help="Annualisierte Volatilität: Die jährliche Schwankungsbreite der Renditen. Je höher der Wert, desto stärker schwankt der Wert Ihres Portfolios – also höheres Risiko, aber auch höhere Chancen.")
+                st.metric("Sharpe Ratio", f"{sharpe:.2f}",
+                    help="Rendite pro Risikoeinheit im Vergleich zur sicheren Anlage. Formel: (Rendite - risikofreier Zins) / Volatilität. Je höher, desto besser. Vergleichen Sie mit dem Benchmark: Ist Ihre Sharpe Ratio höher, schlagen Sie den Markt risikoadjustiert.")
 
             with col2:
                 benchmark_name = benchmark_options.get(benchmark_ticker, benchmark_ticker)
                 st.subheader(f"Benchmark: {benchmark_name.split(' – ')[0]}")
                 bench_return = float(benchmark_data.annualized_return)
                 bench_vol = float(benchmark_data.annualized_volatility)
-                st.metric("Ann. Rendite", f"{bench_return*100:.1f}%")
-                st.metric("Ann. Volatilität", f"{bench_vol*100:.1f}%")
+                st.metric("Ann. Rendite", f"{bench_return*100:.1f}%",
+                    help="Die jährliche Rendite des Vergleichsindex. Liegt Ihr Portfolio darüber, haben Sie den Markt geschlagen.")
+                st.metric("Ann. Volatilität", f"{bench_vol*100:.1f}%",
+                    help="Die jährliche Schwankung des Index. Ist Ihre Volatilität niedriger bei ähnlicher Rendite, ist Ihr Portfolio effizienter.")
                 bench_sharpe = (bench_return - risk_free_rate) / bench_vol if bench_vol > 0 else 0
-                st.metric("Sharpe Ratio", f"{bench_sharpe:.2f}")
+                st.metric("Sharpe Ratio", f"{bench_sharpe:.2f}",
+                    help="Die Sharpe Ratio des Benchmark. Vergleichen Sie: Ist Ihre Sharpe Ratio höher, erzielen Sie mehr Rendite pro Risiko als der Markt.")
 
             # Calculate Beta and Alpha
             if benchmark_data.historical_returns is not None:
@@ -1021,12 +1027,15 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                         st.subheader("Relative Metriken")
                         cols = st.columns(3)
                         with cols[0]:
-                            st.metric("Beta", f"{beta:.2f}", help="Sensitivität zum Markt")
+                            st.metric("Beta", f"{beta:.2f}",
+                                help="Misst, wie stark Ihr Portfolio auf Marktbewegungen reagiert. Beta = 1: bewegt sich wie der Markt. Beta > 1: schwankt stärker (z.B. 1.5 = 50% stärkere Bewegung). Beta < 1: schwankt weniger. Beta < 0: bewegt sich entgegengesetzt (selten).")
                         with cols[1]:
-                            st.metric("Alpha (ann.)", f"{alpha*100:.2f}%", help="Überrendite nach CAPM")
+                            st.metric("Alpha (ann.)", f"{alpha*100:.2f}%",
+                                help="Die Überrendite gegenüber dem, was aufgrund des Risikos (Beta) zu erwarten wäre. Positives Alpha = Sie schlagen den Markt durch gute Auswahl. Negatives Alpha = Sie hinken dem Markt hinterher. Alpha ist der 'Mehrwert' Ihrer Strategie.")
                         with cols[2]:
                             tracking_error = np.std(portfolio_returns - bench_returns) * np.sqrt(252)
-                            st.metric("Tracking Error", f"{tracking_error*100:.1f}%")
+                            st.metric("Tracking Error", f"{tracking_error*100:.1f}%",
+                                help="Misst, wie stark Ihr Portfolio vom Benchmark abweicht. Niedriger Tracking Error (< 5%): Portfolio verhält sich ähnlich wie der Index. Hoher Tracking Error: Portfolio weicht stark ab – gewollt bei aktiver Strategie, ungewollt bei passiver.")
         else:
             st.warning("Benchmark-Daten konnten nicht geladen werden.")
 
