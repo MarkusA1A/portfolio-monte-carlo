@@ -501,13 +501,22 @@ with st.sidebar:
         initial_value = 100000000
         st.warning("Maximalkapital: €100.000.000")
 
-    # Benchmark selection
-    benchmark_ticker = st.selectbox(
+    # Benchmark selection with descriptions
+    benchmark_options = {
+        "SPY": "S&P 500 (USA) – Die 500 größten US-Unternehmen",
+        "QQQ": "NASDAQ 100 (USA) – Die 100 größten Tech-Unternehmen",
+        "^GDAXI": "DAX (Deutschland) – Die 40 größten deutschen Unternehmen",
+        "^STOXX50E": "Euro Stoxx 50 (Europa) – Die 50 größten Eurozone-Unternehmen",
+        "VTI": "Total Stock Market (USA) – Der gesamte US-Aktienmarkt"
+    }
+    benchmark_display = st.selectbox(
         "Benchmark",
-        options=["SPY", "QQQ", "^GDAXI", "^STOXX50E", "VTI"],
+        options=list(benchmark_options.values()),
         index=0,
-        help="Index zum Vergleich"
+        help="Wählen Sie einen Vergleichsindex, um Ihre Portfolio-Performance einzuordnen"
     )
+    # Map display name back to ticker
+    benchmark_ticker = [k for k, v in benchmark_options.items() if v == benchmark_display][0]
 
     # Weight configuration
     st.subheader("Gewichtungen")
