@@ -623,7 +623,8 @@ with st.sidebar:
     rebalancing_option = st.selectbox(
         "Strategie",
         options=rebalancing_options,
-        index=default_rebal_idx
+        index=default_rebal_idx,
+        help="**Rebalancing** = Regelmäßiges Zurücksetzen auf Ihre Zielgewichtung. Beispiel: Wenn Apple stark steigt, wird der Apple-Anteil zu groß. Beim Rebalancing verkaufen Sie etwas Apple und kaufen die anderen Positionen nach. **Buy & Hold**: Einmal kaufen, nie umschichten. **Monatlich/Quartalsweise/Jährlich**: Zu festen Terminen zurück zur Zielgewichtung. **Threshold 5%/10%**: Nur umschichten, wenn eine Position mehr als 5% bzw. 10% von der Zielgewichtung abweicht."
     )
 
     # Risk Settings
@@ -635,7 +636,8 @@ with st.sidebar:
         min_value=0.90,
         max_value=0.99,
         value=default_conf,
-        step=0.01
+        step=0.01,
+        help="Das Konfidenzlevel bestimmt, wie 'sicher' die Risikoaussage sein soll. Bei **95%** bedeutet VaR: 'Mit 95% Wahrscheinlichkeit verliere ich nicht mehr als X Euro.' Die restlichen 5% sind die Extremfälle. **90%** = optimistischer (kleinerer VaR), **99%** = vorsichtiger (größerer VaR). Standard ist 95% – ein guter Kompromiss zwischen Vorsicht und Praxisnähe."
     )
 
     default_rf = loaded["risk_free_rate"] * 100 if loaded else 4.0
