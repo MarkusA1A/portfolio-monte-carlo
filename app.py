@@ -341,6 +341,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("📈 Monte Carlo Portfolio Simulation")
+st.caption("💰 *Show me the money money*")
 
 # Initialize session state
 for key in ['portfolio', 'results', 'loaded_config', 'benchmark_data',
