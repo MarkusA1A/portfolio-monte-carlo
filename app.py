@@ -122,83 +122,183 @@ st.set_page_config(
     page_title="Portfolio Monte Carlo Simulation",
     page_icon="📈",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"  # Collapsed on mobile for better UX
 )
 
 # Custom CSS for responsive design (Mobile: iPhone, iPad)
 st.markdown("""
 <style>
-    /* Responsive metrics */
+    /* === BASE RESPONSIVE STYLES === */
     [data-testid="stMetricValue"] {
         font-size: clamp(1rem, 2.5vw, 1.5rem);
     }
     [data-testid="stMetricLabel"] {
         font-size: clamp(0.7rem, 1.5vw, 0.9rem);
     }
-
-    /* Responsive charts */
     .js-plotly-plot {
         width: 100% !important;
     }
 
-    /* === MOBILE STYLES (iPhone, small screens) === */
+    /* === MOBILE STYLES (iPhone) === */
     @media (max-width: 768px) {
-        /* Sidebar takes full width on mobile */
-        [data-testid="stSidebar"] {
-            min-width: 100%;
+        /* Main container padding */
+        .main .block-container {
+            padding: 1rem 0.75rem 5rem 0.75rem !important;
+            max-width: 100% !important;
         }
 
-        /* Tabs wrap on mobile */
+        /* Sidebar full width overlay on mobile */
+        [data-testid="stSidebar"] {
+            min-width: 100vw !important;
+            width: 100vw !important;
+        }
+        [data-testid="stSidebar"] > div {
+            padding: 1rem;
+        }
+
+        /* Horizontal scrollable tabs */
         .stTabs [data-baseweb="tab-list"] {
-            flex-wrap: wrap;
+            overflow-x: auto;
+            overflow-y: hidden;
+            flex-wrap: nowrap !important;
             gap: 0.25rem;
+            padding-bottom: 0.5rem;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {
+            display: none;
         }
         .stTabs [data-baseweb="tab"] {
-            font-size: 0.8rem;
-            padding: 0.5rem 0.75rem;
+            font-size: 0.75rem;
+            padding: 0.5rem 0.6rem;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
-        /* Columns stack vertically on mobile */
+        /* Columns stack vertically */
         [data-testid="column"] {
             width: 100% !important;
             flex: 1 1 100% !important;
         }
 
-        /* Smaller titles */
-        h1 { font-size: 1.5rem !important; }
-        h2 { font-size: 1.25rem !important; }
-        h3 { font-size: 1.1rem !important; }
+        /* Compact headers */
+        h1 { font-size: 1.4rem !important; margin-bottom: 0.5rem !important; }
+        h2 { font-size: 1.15rem !important; margin-top: 1rem !important; }
+        h3 { font-size: 1rem !important; }
 
-        /* Better touch targets for sliders */
-        .stSlider [data-baseweb="slider"] {
-            padding: 1rem 0;
-        }
-
-        /* Metrics in smaller cards */
+        /* Compact metrics grid */
         [data-testid="stMetricValue"] {
-            font-size: 1.1rem;
+            font-size: 1rem !important;
+            line-height: 1.2;
+        }
+        [data-testid="stMetricLabel"] {
+            font-size: 0.7rem !important;
+        }
+        [data-testid="stMetricDelta"] {
+            font-size: 0.7rem !important;
         }
 
-        /* Number inputs more touch-friendly */
+        /* All inputs: prevent iOS zoom */
+        input, select, textarea {
+            font-size: 16px !important;
+        }
+
+        /* Number inputs touch-friendly */
+        .stNumberInput > div {
+            flex-direction: column;
+        }
         .stNumberInput input {
-            font-size: 16px !important; /* Prevents iOS zoom on focus */
-            padding: 0.75rem;
+            padding: 0.75rem !important;
+            text-align: center;
         }
 
-        /* Better button touch targets */
-        .stButton button {
-            padding: 0.75rem 1.5rem;
-            font-size: 1rem;
-            width: 100%;
+        /* Buttons full width and touch-friendly */
+        .stButton button, .stFormSubmitButton button {
+            padding: 0.875rem 1rem !important;
+            font-size: 1rem !important;
+            width: 100% !important;
+            min-height: 48px;
+        }
+
+        /* Expanders more compact */
+        .streamlit-expanderHeader {
+            font-size: 0.9rem !important;
+            padding: 0.5rem 0 !important;
+        }
+
+        /* Forms tighter spacing */
+        [data-testid="stForm"] {
+            padding: 0.5rem !important;
+        }
+
+        /* Charts responsive */
+        .stPlotlyChart {
+            margin: 0 -0.5rem;
+        }
+
+        /* DataFrames scrollable */
+        .stDataFrame {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Alerts compact */
+        .stAlert {
+            padding: 0.5rem 0.75rem !important;
+            font-size: 0.85rem;
+        }
+
+        /* Info/Warning/Success boxes */
+        [data-testid="stNotificationContentInfo"],
+        [data-testid="stNotificationContentWarning"],
+        [data-testid="stNotificationContentSuccess"] {
+            padding: 0.5rem !important;
+            font-size: 0.85rem !important;
+        }
+
+        /* Caption text */
+        .stCaption {
+            font-size: 0.75rem !important;
+        }
+
+        /* Selectbox */
+        .stSelectbox > div > div {
+            min-height: 44px;
+        }
+
+        /* Text inputs */
+        .stTextInput input {
+            padding: 0.75rem !important;
+        }
+
+        /* Bottom safe area for iOS */
+        .main {
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+    }
+
+    /* === SMALL MOBILE (iPhone SE, etc.) === */
+    @media (max-width: 375px) {
+        .main .block-container {
+            padding: 0.5rem 0.5rem 5rem 0.5rem !important;
+        }
+        h1 { font-size: 1.2rem !important; }
+        h2 { font-size: 1rem !important; }
+        .stTabs [data-baseweb="tab"] {
+            font-size: 0.7rem;
+            padding: 0.4rem 0.5rem;
+        }
+        [data-testid="stMetricValue"] {
+            font-size: 0.9rem !important;
         }
     }
 
     /* === TABLET STYLES (iPad) === */
     @media (min-width: 769px) and (max-width: 1024px) {
         [data-testid="stSidebar"] {
-            min-width: 280px;
+            min-width: 300px;
         }
-
         .stTabs [data-baseweb="tab"] {
             font-size: 0.9rem;
         }
@@ -206,19 +306,35 @@ st.markdown("""
 
     /* === TOUCH DEVICE IMPROVEMENTS === */
     @media (hover: none) and (pointer: coarse) {
-        /* Larger touch targets */
+        /* Minimum touch target size (44px Apple HIG) */
         .stSlider [data-baseweb="slider"] {
             min-height: 44px;
+            padding: 0.75rem 0;
         }
-
-        /* Easier to tap checkboxes */
         .stCheckbox label {
-            padding: 0.5rem 0;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            padding: 0.25rem 0;
         }
-
-        /* Select boxes more touch-friendly */
         .stSelectbox [data-baseweb="select"] {
             min-height: 44px;
+        }
+        .stRadio label {
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+        }
+        /* Prevent accidental double-taps */
+        button, a {
+            touch-action: manipulation;
+        }
+    }
+
+    /* === DARK MODE ADJUSTMENTS === */
+    @media (prefers-color-scheme: dark) {
+        .stAlert {
+            border-radius: 8px;
         }
     }
 </style>
@@ -414,13 +530,13 @@ with st.sidebar:
             else:
                 st.session_state.ticker_weights[ticker] = 100.0 / len(tickers) if tickers else 25.0
 
-    # Collect weights with number input per ticker
+    # Collect weights with number input per ticker (2 columns for mobile-friendly layout)
     weight_values = {}
-    cols = st.columns(min(len(tickers), 4)) if tickers else []
+    cols = st.columns(2) if tickers else []
 
     for i, ticker in enumerate(tickers):
         current_weight = st.session_state.ticker_weights[ticker]
-        col_idx = i % len(cols) if cols else 0
+        col_idx = i % 2
 
         with cols[col_idx]:
             weight = st.number_input(
