@@ -946,15 +946,22 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
         # Correlation Matrix
         st.subheader("Korrelationsmatrix")
         with st.expander("ℹ️ Was zeigt die Korrelationsmatrix?", expanded=False):
-            st.markdown("""
+            st.markdown(f"""
 **Interpretation der Werte:**
 - **+1.0**: Bewegen sich identisch (kein Diversifikationsvorteil)
 - **0.0**: Unabhängig voneinander (gute Diversifikation)
 - **-1.0**: Bewegen sich entgegengesetzt (perfekte Absicherung)
 
-**Berechnung:**
-Die Matrix basiert auf der **Pearson-Korrelation** der täglichen Renditen über den gewählten Datenzeitraum.
-Je niedriger die Korrelation zwischen Ihren Anlagen, desto besser ist Ihr Portfolio diversifiziert.
+**So werden die Werte berechnet:**
+
+1. **Historische Kurse laden**: Für jede Anlage werden die täglichen Schlusskurse der letzten {data_period} von Yahoo Finance abgerufen.
+
+2. **Tägliche Renditen berechnen**: Aus den Kursen wird die prozentuale Veränderung von Tag zu Tag berechnet:
+   - *Rendite = (Kurs heute - Kurs gestern) / Kurs gestern*
+
+3. **Pearson-Korrelation berechnen**: Für jedes Anlagenpaar wird gemessen, wie stark die täglichen Renditen zusammenhängen:
+   - Wenn Anlage A an guten Tagen steigt und Anlage B auch → hohe positive Korrelation
+   - Wenn Anlage A steigt während Anlage B fällt → negative Korrelation
 
 **Tipp:** Kombinieren Sie Anlagen mit niedriger oder negativer Korrelation, um das Gesamtrisiko zu reduzieren.
             """)
