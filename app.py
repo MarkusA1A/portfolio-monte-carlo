@@ -414,27 +414,29 @@ with st.sidebar:
             else:
                 st.session_state.ticker_weights[ticker] = 100.0 / len(tickers) if tickers else 25.0
 
-    # Collect weights with single slider per ticker
-    slider_values = {}
+    # Collect weights with number input per ticker
+    weight_values = {}
+    cols = st.columns(min(len(tickers), 4)) if tickers else []
+
     for i, ticker in enumerate(tickers):
         current_weight = st.session_state.ticker_weights[ticker]
+        col_idx = i % len(cols) if cols else 0
 
-        # Single slider with value display
-        weight = st.slider(
-            f"{ticker}",
-            min_value=0.0,
-            max_value=100.0,
-            value=float(current_weight),
-            step=1.0,
-            format="%.0f%%",
-            key=f"weight_{ticker}_{i}"
-        )
+        with cols[col_idx]:
+            weight = st.number_input(
+                f"{ticker} (%)",
+                min_value=0.0,
+                max_value=100.0,
+                value=float(current_weight),
+                step=1.0,
+                key=f"weight_{ticker}_{i}"
+            )
 
-        slider_values[ticker] = weight
+        weight_values[ticker] = weight
         st.session_state.ticker_weights[ticker] = weight
 
     # Show total and status
-    total = sum(slider_values.values())
+    total = sum(weight_values.values())
     remaining = 100.0 - total
 
     if abs(remaining) < 0.1:
@@ -446,7 +448,7 @@ with st.sidebar:
 
     # Convert to decimal weights (normalize to ensure sum = 1)
     if total > 0:
-        weights = {t: w / total for t, w in slider_values.items()}
+        weights = {t: w / total for t, w in weight_values.items()}
     else:
         weights = {t: 1.0 / len(tickers) for t in tickers} if tickers else {}
 
