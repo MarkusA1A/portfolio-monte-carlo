@@ -945,7 +945,19 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
         # Correlation Matrix
         st.subheader("Korrelationsmatrix")
-        st.caption("ℹ️ Zeigt, wie stark sich die Anlagen gemeinsam bewegen. Werte von +1 (bewegen sich gleich) bis -1 (bewegen sich entgegengesetzt). Niedrige oder negative Korrelation = bessere Diversifikation. Ideal: Anlagen kombinieren, die sich unterschiedlich verhalten.")
+        with st.expander("ℹ️ Was zeigt die Korrelationsmatrix?", expanded=False):
+            st.markdown("""
+**Interpretation der Werte:**
+- **+1.0**: Bewegen sich identisch (kein Diversifikationsvorteil)
+- **0.0**: Unabhängig voneinander (gute Diversifikation)
+- **-1.0**: Bewegen sich entgegengesetzt (perfekte Absicherung)
+
+**Berechnung:**
+Die Matrix basiert auf der **Pearson-Korrelation** der täglichen Renditen über den gewählten Datenzeitraum.
+Je niedriger die Korrelation zwischen Ihren Anlagen, desto besser ist Ihr Portfolio diversifiziert.
+
+**Tipp:** Kombinieren Sie Anlagen mit niedriger oder negativer Korrelation, um das Gesamtrisiko zu reduzieren.
+            """)
         corr_matrix = portfolio.get_correlation_matrix()
         fig_corr = plot_correlation_heatmap(corr_matrix, portfolio.tickers)
         st.plotly_chart(fig_corr, use_container_width=True)
