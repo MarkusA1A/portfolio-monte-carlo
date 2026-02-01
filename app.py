@@ -341,6 +341,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("📈 Monte Carlo Portfolio Simulation")
+st.caption("© Markus O. Thalhamer")
 st.markdown("### 💰 *Show me the money*")
 
 # Initialize session state
