@@ -643,7 +643,8 @@ with st.sidebar:
         min_value=0.0,
         max_value=10.0,
         value=default_rf,
-        step=0.1
+        step=0.1,
+        help="Die Rendite einer 'sicheren' Anlage wie Staatsanleihen oder Tagesgeld. Wird zur Berechnung der Sharpe Ratio verwendet: Wie viel Mehrrendite erzielen Sie pro Risikoeinheit im Vergleich zur sicheren Anlage? Aktuell (2024/25) liegt der Zinssatz für deutsche Staatsanleihen bei ca. 2-4%."
     ) / 100
 
     # Sparplan Settings
@@ -994,7 +995,8 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 st.metric("Sharpe Ratio", f"{sharpe:.2f}")
 
             with col2:
-                st.subheader(f"Benchmark ({benchmark_ticker})")
+                benchmark_name = benchmark_options.get(benchmark_ticker, benchmark_ticker)
+                st.subheader(f"Benchmark: {benchmark_name.split(' – ')[0]}")
                 bench_return = float(benchmark_data.annualized_return)
                 bench_vol = float(benchmark_data.annualized_volatility)
                 st.metric("Ann. Rendite", f"{bench_return*100:.1f}%")
