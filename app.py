@@ -870,24 +870,58 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
         # First row
         cols = st.columns(4)
         with cols[0]:
-            st.metric("Erwarteter Endwert", format_currency(results.mean_final_value), f"{results.mean_return*100:+.1f}%")
+            st.metric(
+                "Erwarteter Endwert",
+                format_currency(results.mean_final_value),
+                f"{results.mean_return*100:+.1f}%",
+                help="Der Durchschnitt aller simulierten Endwerte. Gibt an, welchen Wert Ihr Portfolio im Mittel nach dem gewählten Zeitraum haben könnte. Achtung: Einzelne Szenarien können deutlich darüber oder darunter liegen."
+            )
         with cols[1]:
-            st.metric("Median Endwert", format_currency(results.median_final_value), f"{(results.median_final_value/initial_value - 1)*100:+.1f}%")
+            st.metric(
+                "Median Endwert",
+                format_currency(results.median_final_value),
+                f"{(results.median_final_value/initial_value - 1)*100:+.1f}%",
+                help="Der mittlere Wert aller Simulationen: 50% der Ergebnisse liegen darüber, 50% darunter. Der Median ist robuster als der Durchschnitt und wird weniger von Extremwerten beeinflusst – oft die realistischere Erwartung."
+            )
         with cols[2]:
-            st.metric(f"VaR ({confidence_level:.0%})", format_currency(var_value))
+            st.metric(
+                f"VaR ({confidence_level:.0%})",
+                format_currency(var_value),
+                help=f"Value at Risk: Der maximale Verlust, der mit {confidence_level:.0%} Wahrscheinlichkeit NICHT überschritten wird. Beispiel: Ein VaR von €10.000 bei 95% bedeutet: In 95 von 100 Fällen verlieren Sie höchstens €10.000. In 5 von 100 Fällen kann der Verlust größer sein."
+            )
         with cols[3]:
-            st.metric(f"CVaR ({confidence_level:.0%})", format_currency(cvar_value))
+            st.metric(
+                f"CVaR ({confidence_level:.0%})",
+                format_currency(cvar_value),
+                help=f"Conditional Value at Risk (auch Expected Shortfall): Der durchschnittliche Verlust in den schlimmsten {(1-confidence_level):.0%} aller Fälle. Zeigt, wie hoch die Verluste ausfallen könnten, wenn es wirklich schlecht läuft – wichtig für die Risikoplanung."
+            )
 
         # Second row
         cols = st.columns(4)
         with cols[0]:
-            st.metric("Sharpe Ratio", f"{sharpe:.2f}")
+            st.metric(
+                "Sharpe Ratio",
+                f"{sharpe:.2f}",
+                help="Misst die Rendite im Verhältnis zum eingegangenen Risiko. Berechnung: (Rendite - risikofreier Zins) / Volatilität. Interpretation: < 1 = mäßig, 1-2 = gut, > 2 = sehr gut. Je höher, desto mehr Rendite pro Risikoeinheit."
+            )
         with cols[1]:
-            st.metric("Sortino Ratio", f"{sortino:.2f}")
+            st.metric(
+                "Sortino Ratio",
+                f"{sortino:.2f}",
+                help="Ähnlich wie Sharpe Ratio, aber berücksichtigt nur negative Schwankungen (Verluste). Positive Schwankungen werden nicht 'bestraft'. Daher oft aussagekräftiger für Anleger, die vor allem Verluste vermeiden möchten."
+            )
         with cols[2]:
-            st.metric("Max Drawdown", f"{max_dd*100:.1f}%")
+            st.metric(
+                "Max Drawdown",
+                f"{max_dd*100:.1f}%",
+                help="Der größte prozentuale Wertverlust vom Höchststand zum Tiefststand. Beispiel: -30% bedeutet, dass das Portfolio zwischenzeitlich 30% seines Höchstwertes verloren hat. Zeigt das Worst-Case-Szenario während der Anlage."
+            )
         with cols[3]:
-            st.metric("Ann. Volatilität", f"{vol*100:.1f}%")
+            st.metric(
+                "Ann. Volatilität",
+                f"{vol*100:.1f}%",
+                help="Die jährliche Schwankungsbreite der Renditen. Eine Volatilität von 20% bedeutet: Die Rendite schwankt typischerweise um ±20% pro Jahr. Höhere Volatilität = höheres Risiko, aber auch höhere Chancen."
+            )
 
         # Charts
         st.markdown("---")
@@ -904,11 +938,13 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
         with col2:
             st.subheader("VaR Kegel")
+            st.caption("ℹ️ Zeigt die mögliche Wertentwicklung über die Zeit mit Konfidenzintervallen. Der innere Bereich zeigt wahrscheinliche Szenarien, der äußere Bereich extreme aber mögliche Verläufe. Je breiter der Kegel, desto unsicherer die Prognose.")
             fig_var = plot_var_cone(results)
             st.plotly_chart(fig_var, use_container_width=True)
 
         # Correlation Matrix
         st.subheader("Korrelationsmatrix")
+        st.caption("ℹ️ Zeigt, wie stark sich die Anlagen gemeinsam bewegen. Werte von +1 (bewegen sich gleich) bis -1 (bewegen sich entgegengesetzt). Niedrige oder negative Korrelation = bessere Diversifikation. Ideal: Anlagen kombinieren, die sich unterschiedlich verhalten.")
         corr_matrix = portfolio.get_correlation_matrix()
         fig_corr = plot_correlation_heatmap(corr_matrix, portfolio.tickers)
         st.plotly_chart(fig_corr, use_container_width=True)
@@ -974,13 +1010,13 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
             # Summary metrics
             cols = st.columns(4)
             with cols[0]:
-                st.metric("Gesamteinzahlung", format_currency(savings_results.total_invested))
+                st.metric("Gesamteinzahlung", format_currency(savings_results.total_invested), help="Die Summe aller monatlichen Einzahlungen über den gesamten Anlagezeitraum.")
             with cols[1]:
-                st.metric("Erwarteter Endwert", format_currency(savings_results.mean_final_value))
+                st.metric("Erwarteter Endwert", format_currency(savings_results.mean_final_value), help="Der durchschnittliche Endwert aller Simulationen. Gibt an, welchen Wert Ihr Sparplan im Mittel erreichen könnte.")
             with cols[2]:
-                st.metric("Erwarteter Gewinn", format_currency(savings_results.mean_profit), f"{savings_results.mean_return*100:+.1f}%")
+                st.metric("Erwarteter Gewinn", format_currency(savings_results.mean_profit), f"{savings_results.mean_return*100:+.1f}%", help="Die Differenz zwischen erwartetem Endwert und Gesamteinzahlung – Ihr durchschnittlicher Gewinn durch Kursgewinne und Zinseszins.")
             with cols[3]:
-                st.metric("Median Endwert", format_currency(savings_results.median_final_value))
+                st.metric("Median Endwert", format_currency(savings_results.median_final_value), help="Der mittlere Wert: 50% der Simulationen liegen darüber, 50% darunter. Oft realistischer als der Durchschnitt, da Ausreißer weniger Einfluss haben.")
 
             # Visualization
             st.subheader("Wertentwicklung über Zeit")
@@ -1194,9 +1230,9 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 # Key metrics
                 cols = st.columns(3)
                 with cols[0]:
-                    st.metric("Median Endwert", format_currency(wr.median_final_value))
+                    st.metric("Median Endwert", format_currency(wr.median_final_value), help="Der mittlere Vermögenswert am Ende des Entnahmezeitraums. 50% der Simulationen enden mit mehr, 50% mit weniger. Bei 0€ bedeutet das: In der Hälfte der Fälle ist das Geld aufgebraucht.")
                 with cols[1]:
-                    st.metric("Gesamtentnahme (Median)", format_currency(wr.total_withdrawn_median))
+                    st.metric("Gesamtentnahme (Median)", format_currency(wr.total_withdrawn_median), help="Die Summe aller Entnahmen im mittleren Szenario. Zeigt, wie viel Sie insgesamt entnehmen konnten – je höher, desto besser hat die Strategie funktioniert.")
                 with cols[2]:
                     if wr.earliest_depletion:
                         depletion_years = wr.earliest_depletion / 12
@@ -1204,10 +1240,11 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                         st.metric(
                             "Früheste Erschöpfung",
                             f"mit {depletion_age:.0f} Jahren",
-                            f"nach {depletion_years:.1f} Jahren"
+                            f"nach {depletion_years:.1f} Jahren",
+                            help="Das Worst-Case-Szenario: In mindestens einer Simulation war das Geld zu diesem Zeitpunkt aufgebraucht. Wichtig für die Planung eines Sicherheitspuffers."
                         )
                     else:
-                        st.metric("Früheste Erschöpfung", "Nie", f"Geld reicht bis {end_age}")
+                        st.metric("Früheste Erschöpfung", "Nie", f"Geld reicht bis {end_age}", help="Gute Nachricht: In keiner Simulation war das Geld vor dem geplanten Ende aufgebraucht.")
 
             # Charts
             st.subheader("Vermögensentwicklung")
@@ -1326,10 +1363,10 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
             with col1:
                 st.markdown("### 🔴 Aktuelles Portfolio")
-                st.metric("Erwartete Rendite", f"{current_return*100:.1f}%")
-                st.metric("Volatilität", f"{current_vol*100:.1f}%")
+                st.metric("Erwartete Rendite", f"{current_return*100:.1f}%", help="Die geschätzte jährliche Rendite basierend auf historischen Daten.")
+                st.metric("Volatilität", f"{current_vol*100:.1f}%", help="Die jährliche Schwankungsbreite – je höher, desto riskanter.")
                 current_sharpe = (current_return - risk_free_rate) / current_vol if current_vol > 0 else 0
-                st.metric("Sharpe Ratio", f"{current_sharpe:.2f}")
+                st.metric("Sharpe Ratio", f"{current_sharpe:.2f}", help="Rendite pro Risikoeinheit. Vergleichen Sie mit den optimalen Portfolios – liegt Ihr Wert deutlich darunter, gibt es Verbesserungspotential.")
 
                 st.markdown("**Gewichtung:**")
                 for ticker, weight in zip(portfolio.tickers, portfolio.weights):
@@ -1338,10 +1375,11 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
             with col2:
                 st.markdown("### ⭐ Max Sharpe Portfolio")
+                st.caption("Beste Rendite pro Risikoeinheit")
                 max_sharpe = frontier_result.max_sharpe_portfolio
                 st.metric("Erwartete Rendite", f"{max_sharpe.expected_return*100:.1f}%")
                 st.metric("Volatilität", f"{max_sharpe.volatility*100:.1f}%")
-                st.metric("Sharpe Ratio", f"{max_sharpe.sharpe_ratio:.2f}")
+                st.metric("Sharpe Ratio", f"{max_sharpe.sharpe_ratio:.2f}", help="Das theoretisch optimale Portfolio: Maximale Rendite für das eingegangene Risiko.")
 
                 st.markdown("**Optimale Gewichtung:**")
                 for ticker, weight in max_sharpe.get_weights_dict().items():
@@ -1350,9 +1388,10 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
             with col3:
                 st.markdown("### 💎 Min Volatilität Portfolio")
+                st.caption("Geringstes Risiko")
                 min_vol = frontier_result.min_volatility_portfolio
                 st.metric("Erwartete Rendite", f"{min_vol.expected_return*100:.1f}%")
-                st.metric("Volatilität", f"{min_vol.volatility*100:.1f}%")
+                st.metric("Volatilität", f"{min_vol.volatility*100:.1f}%", help="Die niedrigste erreichbare Volatilität mit den gewählten Anlagen.")
                 st.metric("Sharpe Ratio", f"{min_vol.sharpe_ratio:.2f}")
 
                 st.markdown("**Optimale Gewichtung:**")
