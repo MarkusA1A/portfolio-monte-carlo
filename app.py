@@ -48,6 +48,42 @@ from src.visualization.charts import (
     plot_optimal_weights
 )
 from src.export.reports import create_excel_report, create_csv_report
+import yfinance as yf
+import re
+
+
+def is_isin(text: str) -> bool:
+    """Check if text looks like an ISIN (12 chars, starts with 2 letters)."""
+    if len(text) != 12:
+        return False
+    return bool(re.match(r'^[A-Z]{2}[A-Z0-9]{10}$', text))
+
+
+def isin_to_ticker(isin: str) -> str | None:
+    """Convert ISIN to ticker symbol using yfinance search."""
+    try:
+        search = yf.Search(isin, max_results=5)
+        if search.quotes:
+            for quote in search.quotes:
+                if quote.get('symbol'):
+                    return quote['symbol']
+    except Exception:
+        pass
+    return None
+
+
+def process_ticker_input(input_str: str) -> tuple[str, str | None]:
+    """
+    Process a single ticker/ISIN input.
+    Returns (ticker, original_isin) - original_isin is set if input was an ISIN.
+    """
+    cleaned = input_str.strip().upper()
+    if is_isin(cleaned):
+        ticker = isin_to_ticker(cleaned)
+        if ticker:
+            return (ticker, cleaned)
+        return (cleaned, cleaned)  # Fallback: use ISIN as ticker
+    return (cleaned, None)
 
 
 def format_currency(value: float, decimals: int = 0) -> str:
@@ -312,11 +348,27 @@ with st.sidebar:
 
     default_tickers = ", ".join(loaded["tickers"]) if loaded else "AAPL, MSFT, GOOGL, AMZN"
     tickers_input = st.text_input(
-        "Ticker-Symbole (kommasepariert)",
+        "Ticker-Symbole oder ISINs (kommasepariert)",
         value=default_tickers,
-        help="z.B. AAPL, MSFT, GOOGL"
+        help="z.B. AAPL, MSFT, GOOGL oder ISINs wie US0378331005, DE0007164600"
     )
-    tickers = [t.strip().upper() for t in tickers_input.split(",") if t.strip()]
+
+    # Process inputs (handle both tickers and ISINs)
+    raw_inputs = [t.strip() for t in tickers_input.split(",") if t.strip()]
+    tickers = []
+    isin_mappings = {}  # ISIN -> Ticker mapping for display
+
+    for raw in raw_inputs:
+        ticker, original_isin = process_ticker_input(raw)
+        if ticker:
+            tickers.append(ticker)
+            if original_isin:
+                isin_mappings[original_isin] = ticker
+
+    # Show ISIN conversions to user
+    if isin_mappings:
+        conversion_text = ", ".join([f"{isin} → {ticker}" for isin, ticker in isin_mappings.items()])
+        st.info(f"🔄 ISIN-Konvertierung: {conversion_text}")
 
     default_initial = loaded["initial_value"] if loaded else 100000
     initial_value_str = st.text_input(
@@ -695,7 +747,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
         st.markdown("---")
 
         # Key Metrics - responsive grid
-        st.subheader("Simulationsergebnisse")
+        st.subheader(f"Simulationsergebnisse ({results.num_simulations:,} Simulationen)".replace(",", "."))
 
         # First row
         cols = st.columns(4)
@@ -800,6 +852,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
         savings_results = st.session_state.savings_results
 
         if savings_results:
+            st.caption(f"Basierend auf {savings_results.num_simulations:,} Simulationen".replace(",", "."))
             # Summary metrics
             cols = st.columns(4)
             with cols[0]:
@@ -1004,7 +1057,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
             wr = st.session_state.withdrawal_results
 
             st.markdown("---")
-            st.subheader("Ergebnisse")
+            st.subheader(f"Ergebnisse ({wr.n_simulations:,} Simulationen)".replace(",", "."))
 
             # Success rate gauge
             col1, col2 = st.columns([1, 2])
@@ -1246,6 +1299,9 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
         scenario_results = st.session_state.scenario_results
 
         if scenario_results:
+            # Get simulation count from first scenario result
+            first_result = next(iter(scenario_results.values()))
+            st.caption(f"Basierend auf {first_result.num_simulations:,} Simulationen pro Szenario".replace(",", "."))
             # Scenario comparison table
             scenario_data = []
             for name, res in scenario_results.items():
