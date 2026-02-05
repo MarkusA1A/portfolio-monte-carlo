@@ -142,6 +142,22 @@ def format_number(value: float, decimals: int = 0) -> str:
         return f"{value:,.{decimals}f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
+def scroll_to_top():
+    """Inject JavaScript to scroll to top of the main content area."""
+    js = """
+    <script>
+        // Scroll the main content area to top
+        const mainContent = window.parent.document.querySelector('section.main');
+        if (mainContent) {
+            mainContent.scrollTo({top: 0, behavior: 'smooth'});
+        }
+        // Also scroll the window itself
+        window.parent.scrollTo({top: 0, behavior: 'smooth'});
+    </script>
+    """
+    st.markdown(js, unsafe_allow_html=True)
+
+
 def parse_german_number(text: str, default: int = 0) -> int:
     """Parse German-formatted number (dots as thousand separators) to integer."""
     if not text:
@@ -794,6 +810,9 @@ if run_simulation:
     elif abs(sum(weights.values()) - 1.0) > 0.01:
         st.error(f"Gewichtungen müssen 100% ergeben. Aktuell: {sum(weights.values())*100:.1f}%")
     else:
+        # Scroll to top so user sees progress
+        scroll_to_top()
+
         # Memory estimation and automatic adjustment
         estimated_memory = estimate_memory_mb(num_simulations, time_horizon_days, len(tickers))
 
@@ -1374,6 +1393,9 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
         # Simulation Button
         if st.button("🏦 Entnahme simulieren", use_container_width=True, key="run_withdrawal_sim"):
+            # Scroll to top so user sees progress
+            scroll_to_top()
+
             # Sofortige Benachrichtigung
             st.toast("🏦 Simulation gestartet!", icon="🚀")
 
@@ -1527,6 +1549,9 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
             # SWR Button
             if st.button("Sichere Entnahmerate berechnen", use_container_width=True, key="run_swr_calc"):
+                # Scroll to top so user sees progress
+                scroll_to_top()
+
                 # Sofortige Benachrichtigung
                 st.toast("💡 SWR-Berechnung gestartet!", icon="🚀")
 
