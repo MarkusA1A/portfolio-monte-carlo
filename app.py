@@ -2382,6 +2382,78 @@ else:
         - Extreme Gewichtungen (z.B. 90% in einer Aktie) sind praktisch problematisch
         """)
 
+    with st.expander("🏠 Asset-Klassen & REITs erklärt"):
+        st.markdown("""
+        ### Was sind Asset-Klassen?
+
+        Asset-Klassen sind Kategorien von Anlagen mit ähnlichen Eigenschaften und Risikoprofilen.
+        Die **wichtigsten Asset-Klassen** für Privatanleger:
+
+        | Asset-Klasse | Renditeerwartung | Risiko | Inflationsschutz | Beispiel-ETFs |
+        |--------------|------------------|--------|------------------|---------------|
+        | **Aktien** | Hoch (7-10% p.a.) | Hoch | Mittel | VTI, VOO, VGK |
+        | **Anleihen** | Niedrig (2-4% p.a.) | Niedrig | Schlecht | BND, TLT, AGG |
+        | **REITs** | Mittel (5-8% p.a.) | Mittel-Hoch | **Gut** | VNQ, VNQI, IYR |
+        | **Rohstoffe** | Variabel | Hoch | **Sehr gut** | GLD, SLV, DBC |
+        | **Geldmarkt** | Sehr niedrig (1-3% p.a.) | Sehr niedrig | Schlecht | SGOV, BIL |
+
+        ---
+
+        ### 🏠 Was sind REITs?
+
+        **REIT** = Real Estate Investment Trust (Immobilien-Aktiengesellschaft)
+
+        REITs sind börsengehandelte Unternehmen, die Immobilien besitzen und verwalten:
+        - Bürogebäude, Einkaufszentren, Wohnungen, Datenzentren, Krankenhäuser
+        - **Müssen 90% ihrer Gewinne als Dividende ausschütten** (daher hohe Dividendenrendite)
+        - Ermöglichen Immobilieninvestment ohne selbst Immobilien zu kaufen
+
+        **Vorteile von REITs:**
+        - 📈 **Inflationsschutz**: Mieten steigen meist mit der Inflation
+        - 💰 **Hohe Dividenden**: Typisch 3-5% Dividendenrendite
+        - 🔄 **Liquidität**: Täglich an der Börse handelbar (anders als echte Immobilien)
+        - 🌍 **Diversifikation**: Zugang zu vielen Immobilien weltweit
+
+        **Risiken von REITs:**
+        - 📉 Zinsempfindlich (steigende Zinsen = fallende REIT-Kurse)
+        - 🏚️ Leerstandsrisiko bei Wirtschaftskrisen
+        - 💱 Währungsrisiko bei internationalen REITs
+
+        ---
+
+        ### 📊 Korrelationen verstehen
+
+        **Was bedeutet Korrelation?**
+        - **+1.0** = Bewegen sich identisch (kein Diversifikationsvorteil)
+        - **0.0** = Unabhängig voneinander (gute Diversifikation)
+        - **-1.0** = Bewegen sich entgegengesetzt (perfekte Absicherung)
+
+        **Typische Korrelationen (langfristig):**
+
+        | Kombination | Korrelation | Was bedeutet das? |
+        |-------------|-------------|-------------------|
+        | Tech-Aktien untereinander | **0.7 - 0.9** | Sehr hoch – steigen/fallen zusammen |
+        | Aktien + REITs | **0.5 - 0.7** | Mittel – REITs bieten etwas Diversifikation |
+        | Aktien + Anleihen | **0.0 - 0.3** | Niedrig – klassische Absicherung |
+        | Aktien + Gold | **-0.1 - 0.2** | Sehr niedrig – Gold als Krisenabsicherung |
+        | REITs + Inflation | **Positiv** | REITs profitieren von Inflation |
+
+        ---
+
+        ### 💡 Beispiel-Portfolios mit REITs
+
+        **Konservativ (niedriges Risiko):**
+        - 40% Aktien (VTI) + 40% Anleihen (BND) + 10% REITs (VNQ) + 10% Gold (GLD)
+
+        **Ausgewogen (mittleres Risiko):**
+        - 50% Aktien (VTI) + 20% Anleihen (BND) + 20% REITs (VNQ) + 10% International (VGK)
+
+        **Wachstumsorientiert (höheres Risiko):**
+        - 60% Aktien (VTI/QQQ) + 25% REITs (VNQ) + 15% Emerging Markets (EEM)
+
+        *Tipp: REITs eignen sich gut als 10-25% Portfolio-Anteil für Diversifikation und Inflationsschutz.*
+        """)
+
     with st.expander("⚠️ Wichtige Hinweise & Limitationen"):
         st.markdown("""
         ### Was diese Simulation NICHT kann
