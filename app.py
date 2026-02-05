@@ -2078,6 +2078,20 @@ else:
     st.markdown("---")
     with st.expander("🆕 **Was ist neu?** - Aktuelle Updates", expanded=False):
         st.markdown("""
+        ### Version 1.3.0 (Februar 2025)
+
+        #### 🏠 NEU: REITs als Asset-Klasse
+        - **VNQ als neuer Benchmark**: Vanguard Real Estate ETF für Immobilien-Vergleiche
+        - **Beliebte Ticker nach Asset-Klasse**: Neuer Expander mit Ticker-Übersicht (Aktien, Anleihen, Rohstoffe, REITs)
+        - **Korrelationstabelle**: Typische Korrelationen zwischen Asset-Klassen
+        - **Umfassende Erklärung**: Neuer Abschnitt "Asset-Klassen & REITs erklärt"
+          - Was sind REITs? (90% Dividenden-Ausschüttungspflicht)
+          - Vorteile: Inflationsschutz, Diversifikation, Liquidität
+          - Risiken: Zinsänderungsrisiko, Immobilienmarkt-Zyklen
+          - Beispiel-Portfolios für verschiedene Anlagestrategien
+
+        ---
+
         ### Version 1.2.0 (Februar 2025)
 
         #### 💶 NEU: Steuern bei Entnahme
