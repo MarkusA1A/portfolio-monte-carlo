@@ -2,14 +2,16 @@
 Monte Carlo Simulation Engine for Portfolio Analysis
 
 Memory-optimized version using float32 and optional price path storage.
+Supports optional tax and transaction cost tracking.
 """
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 import numpy as np
 from scipy import stats
 
 if TYPE_CHECKING:
     from src.portfolio.portfolio import Portfolio
+    from src.simulation.tax_costs import TaxCostCalculator, TaxCostResults
 
 
 @dataclass
@@ -123,8 +125,9 @@ class MonteCarloSimulator:
         self,
         portfolio: "Portfolio",
         rebalancing_strategy=None,
-        store_price_paths: bool = False
-    ) -> SimulationResults:
+        store_price_paths: bool = False,
+        tax_cost_calculator: Optional["TaxCostCalculator"] = None
+    ) -> "SimulationResults | tuple[SimulationResults, Optional[TaxCostResults]]":
         """
         Run Monte Carlo simulation for the given portfolio.
 
@@ -132,9 +135,10 @@ class MonteCarloSimulator:
             portfolio: Portfolio object with assets and weights
             rebalancing_strategy: Optional rebalancing strategy
             store_price_paths: If True, store full price paths (uses more memory)
+            tax_cost_calculator: Optional calculator for tax and transaction costs
 
         Returns:
-            SimulationResults with simulation data
+            SimulationResults (or tuple with TaxCostResults if calculator provided)
         """
         num_assets = len(portfolio.assets)
 
@@ -143,7 +147,8 @@ class MonteCarloSimulator:
         use_batched = estimated_memory > self.MEMORY_EFFICIENT_THRESHOLD_MB
 
         if use_batched and self.num_simulations > 5000:
-            return self._run_batched_simulation(portfolio, rebalancing_strategy)
+            result = self._run_batched_simulation(portfolio, rebalancing_strategy)
+            return (result, None) if tax_cost_calculator else result
 
         # Get portfolio statistics
         mean_returns = portfolio.get_mean_returns().astype(self.dtype)
@@ -174,23 +179,33 @@ class MonteCarloSimulator:
         weights = portfolio.weights.astype(self.dtype)
         initial_value = self.dtype(portfolio.initial_value)
 
+        # Initialize tax/cost calculator if provided
+        if tax_cost_calculator is not None:
+            tax_cost_calculator.initialize_cost_basis(weights)
+
+        tax_cost_results = None
+
         if rebalancing_strategy is None:
-            # Memory-efficient buy and hold simulation
+            # Memory-efficient buy and hold simulation (no tax tracking needed)
             portfolio_values, price_paths = self._simulate_buy_and_hold(
                 daily_returns, initial_prices, weights, initial_value,
                 store_price_paths
             )
+            # For buy & hold: create empty results if calculator provided
+            if tax_cost_calculator is not None:
+                final_values = portfolio_values[:, -1]
+                tax_cost_results = tax_cost_calculator.get_results(final_values, final_values)
         else:
-            # With rebalancing - needs price paths internally
-            portfolio_values, price_paths = self._simulate_with_rebalancing_optimized(
+            # With rebalancing - may have tax/cost implications
+            portfolio_values, price_paths, tax_cost_results = self._simulate_with_rebalancing_optimized(
                 daily_returns, initial_prices, weights, initial_value,
-                rebalancing_strategy, store_price_paths
+                rebalancing_strategy, store_price_paths, tax_cost_calculator
             )
 
         final_values = portfolio_values[:, -1]
         total_returns = (final_values - initial_value) / initial_value
 
-        return SimulationResults(
+        sim_results = SimulationResults(
             price_paths=price_paths,
             portfolio_values=portfolio_values,
             final_values=final_values,
@@ -198,6 +213,10 @@ class MonteCarloSimulator:
             time_horizon=self.time_horizon,
             num_simulations=self.num_simulations
         )
+
+        if tax_cost_calculator is not None:
+            return sim_results, tax_cost_results
+        return sim_results
 
     def _simulate_buy_and_hold(
         self,
@@ -244,14 +263,20 @@ class MonteCarloSimulator:
         weights: np.ndarray,
         initial_value: float,
         strategy,
-        store_price_paths: bool
-    ) -> tuple[np.ndarray, np.ndarray | None]:
-        """Memory-efficient simulation with rebalancing."""
+        store_price_paths: bool,
+        tax_cost_calculator: Optional["TaxCostCalculator"] = None
+    ) -> "tuple[np.ndarray, np.ndarray | None, Optional[TaxCostResults]]":
+        """Memory-efficient simulation with rebalancing and optional tax/cost tracking."""
         num_sims, time_horizon, num_assets = daily_returns.shape
 
         # Initialize
         portfolio_values = np.zeros((num_sims, time_horizon + 1), dtype=self.dtype)
         portfolio_values[:, 0] = initial_value
+
+        # Track values before tax/cost deductions for final comparison
+        if tax_cost_calculator is not None:
+            portfolio_values_before_tax = np.zeros((num_sims, time_horizon + 1), dtype=self.dtype)
+            portfolio_values_before_tax[:, 0] = initial_value
 
         current_weights = np.tile(weights, (num_sims, 1))
         current_prices = np.tile(initial_prices, (num_sims, 1))
@@ -276,15 +301,33 @@ class MonteCarloSimulator:
             weighted_returns = np.sum(current_weights * period_returns, axis=1)
             portfolio_values[:, t + 1] = portfolio_values[:, t] * (1 + weighted_returns)
 
+            if tax_cost_calculator is not None:
+                portfolio_values_before_tax[:, t + 1] = portfolio_values[:, t + 1].copy()
+
             # Update weights based on price changes (vectorized)
             weight_factors = (1 + period_returns) / (1 + weighted_returns[:, np.newaxis])
             current_weights = current_weights * weight_factors
 
             # Check if rebalancing is needed
             if strategy.should_rebalance(t + 1, current_weights, weights):
+                # Calculate and apply tax/costs if calculator is provided
+                if tax_cost_calculator is not None:
+                    total_costs = tax_cost_calculator.process_rebalancing(
+                        current_weights, weights, portfolio_values[:, t + 1]
+                    )
+                    portfolio_values[:, t + 1] -= total_costs
+
                 current_weights = np.tile(weights, (num_sims, 1))
 
-        return portfolio_values, price_paths
+        # Generate tax/cost results
+        tax_cost_results = None
+        if tax_cost_calculator is not None:
+            tax_cost_results = tax_cost_calculator.get_results(
+                portfolio_values_before_tax[:, -1],
+                portfolio_values[:, -1]
+            )
+
+        return portfolio_values, price_paths, tax_cost_results
 
     def _run_batched_simulation(
         self,

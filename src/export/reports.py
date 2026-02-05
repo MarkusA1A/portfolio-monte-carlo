@@ -9,6 +9,7 @@ import numpy as np
 
 if TYPE_CHECKING:
     from src.simulation.monte_carlo import SimulationResults
+    from src.simulation.tax_costs import TaxCostResults
     from src.portfolio.portfolio import Portfolio
 
 
@@ -19,10 +20,14 @@ def create_excel_report(
     var_value: float,
     cvar_value: float,
     confidence_level: float,
-    metrics: dict
+    metrics: dict,
+    tax_cost_results: Optional["TaxCostResults"] = None
 ) -> bytes:
     """
     Create an Excel report with multiple sheets.
+
+    Args:
+        tax_cost_results: Optional tax and cost results
 
     Returns:
         Excel file as bytes
@@ -102,6 +107,37 @@ def create_excel_report(
             writer, sheet_name='Simulationsdaten', index=False
         )
 
+        # Sheet 6: Tax & Cost Analysis (if available)
+        if tax_cost_results is not None:
+            tax_data = {
+                'Metrik': [
+                    'Endwert vor Steuern (Ø)',
+                    'Endwert nach Steuern (Ø)',
+                    'Realisierte Gewinne (Ø)',
+                    'Gezahlte Steuern (Ø)',
+                    'Transaktionskosten (Ø)',
+                    'Unrealisierte Gewinne (Ø)',
+                    'Rebalancing-Events (Ø)',
+                    'Effektiver Steuersatz',
+                    'Steuersatz (KESt)',
+                    'Gesamte Kostenbelastung'
+                ],
+                'Wert': [
+                    tax_cost_results.mean_final_before_tax,
+                    tax_cost_results.mean_final_after_tax,
+                    tax_cost_results.mean_realized_gains,
+                    tax_cost_results.mean_taxes_paid,
+                    tax_cost_results.mean_transaction_costs,
+                    tax_cost_results.mean_unrealized_gains,
+                    tax_cost_results.mean_rebalancing_events,
+                    tax_cost_results.effective_tax_rate,
+                    tax_cost_results.tax_rate,
+                    tax_cost_results.total_cost_impact
+                ]
+            }
+            tax_df = pd.DataFrame(tax_data)
+            tax_df.to_excel(writer, sheet_name='Steuern & Kosten', index=False)
+
     output.seek(0)
     return output.getvalue()
 
@@ -109,10 +145,14 @@ def create_excel_report(
 def create_csv_report(
     portfolio: "Portfolio",
     results: "SimulationResults",
-    initial_value: float
+    initial_value: float,
+    tax_cost_results: Optional["TaxCostResults"] = None
 ) -> str:
     """
     Create a simple CSV summary report.
+
+    Args:
+        tax_cost_results: Optional tax and cost results
 
     Returns:
         CSV content as string
@@ -151,6 +191,21 @@ def create_csv_report(
         val = results.percentile(p)
         ret = val / initial_value - 1
         lines.append(f"{p}%,{val:.2f},{ret:.2%}")
+
+    # Add tax & cost section if available
+    if tax_cost_results is not None:
+        lines.extend([
+            "",
+            "=== Steuern & Kosten ===",
+            f"Endwert vor Steuern (Ø),{tax_cost_results.mean_final_before_tax:.2f}",
+            f"Endwert nach Steuern (Ø),{tax_cost_results.mean_final_after_tax:.2f}",
+            f"Realisierte Gewinne (Ø),{tax_cost_results.mean_realized_gains:.2f}",
+            f"Gezahlte Steuern (Ø),{tax_cost_results.mean_taxes_paid:.2f}",
+            f"Transaktionskosten (Ø),{tax_cost_results.mean_transaction_costs:.2f}",
+            f"Rebalancing-Events (Ø),{tax_cost_results.mean_rebalancing_events:.1f}",
+            f"Effektiver Steuersatz,{tax_cost_results.effective_tax_rate:.2%}",
+            f"Steuersatz (KESt),{tax_cost_results.tax_rate:.2%}"
+        ])
 
     return "\n".join(lines)
 

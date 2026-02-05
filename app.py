@@ -17,6 +17,7 @@ from src.simulation.monte_carlo import MonteCarloSimulator
 from src.simulation.savings_plan import SavingsPlanSimulator
 from src.simulation.scenarios import SCENARIOS, ScenarioType, Scenario
 from src.simulation.withdrawal import WithdrawalSimulator, calculate_required_capital
+from src.simulation.tax_costs import TaxConfig, TransactionCostConfig, TaxCostCalculator
 from src.data.market_data import MarketDataProvider
 from src.portfolio.rebalancing import (
     NoRebalancing,
@@ -662,6 +663,56 @@ with st.sidebar:
         disabled=not enable_savings
     )
 
+    # Tax & Cost Settings
+    st.subheader("💶 Steuern & Kosten")
+    enable_tax_costs = st.checkbox(
+        "Steuern & Transaktionskosten berücksichtigen",
+        value=False,
+        help="Berechnet österreichische KESt (27,5%) auf realisierte Gewinne bei Rebalancing und Transaktionskosten"
+    )
+
+    if enable_tax_costs:
+        tax_rate = st.slider(
+            "Kapitalertragssteuer (%)",
+            min_value=0.0,
+            max_value=50.0,
+            value=27.5,
+            step=0.5,
+            help="Österreichische KESt: 27,5% auf Kapitalerträge. Deutschland: 26,375% (inkl. Soli)"
+        ) / 100
+
+        cost_model = st.radio(
+            "Kostenmodell",
+            ["Prozentual", "Flat Fee"],
+            help="**Prozentual**: Prozentsatz des Handelsvolumens. **Flat Fee**: Fixer Betrag pro Transaktion."
+        )
+
+        if cost_model == "Prozentual":
+            transaction_cost_pct = st.slider(
+                "Transaktionskosten (%)",
+                min_value=0.0,
+                max_value=1.0,
+                value=0.1,
+                step=0.01,
+                help="Typisch: 0,1% für Online-Broker, 0,5% für Filialbanken"
+            ) / 100
+            flat_fee = 0.0
+        else:
+            flat_fee = st.number_input(
+                "Flat Fee pro Trade (€)",
+                min_value=0.0,
+                max_value=50.0,
+                value=5.0,
+                step=0.5,
+                help="Fixer Betrag pro Kauf/Verkauf"
+            )
+            transaction_cost_pct = 0.0
+    else:
+        tax_rate = 0.275
+        transaction_cost_pct = 0.001
+        flat_fee = 0.0
+        cost_model = "Prozentual"
+
     # Run button
     st.markdown("---")
     run_simulation = st.button("🚀 Simulation starten", type="primary", use_container_width=True)
@@ -757,7 +808,35 @@ if run_simulation:
                 time_horizon=time_horizon_days
             )
             strategy = get_rebalancing_strategy(rebalancing_option)
-            results = simulator.run_simulation(portfolio, strategy)
+
+            # Create tax/cost calculator if enabled and rebalancing is active
+            tax_cost_calculator = None
+            if enable_tax_costs and strategy is not None:
+                tax_config = TaxConfig(tax_rate=tax_rate)
+                cost_config = TransactionCostConfig(
+                    use_percentage=(cost_model == "Prozentual"),
+                    percentage_fee=transaction_cost_pct,
+                    flat_fee_per_trade=flat_fee
+                )
+                tax_cost_calculator = TaxCostCalculator(
+                    tax_config=tax_config,
+                    cost_config=cost_config,
+                    num_simulations=num_simulations,
+                    num_assets=len(portfolio.assets),
+                    initial_value=initial_value
+                )
+
+            # Run simulation
+            sim_result = simulator.run_simulation(portfolio, strategy, tax_cost_calculator=tax_cost_calculator)
+
+            # Handle return value (tuple if tax calculator provided)
+            if tax_cost_calculator is not None:
+                results, tax_cost_results = sim_result
+                st.session_state.tax_cost_results = tax_cost_results
+            else:
+                results = sim_result
+                st.session_state.tax_cost_results = None
+
             st.session_state.results = results
         except MemoryError:
             st.error(
@@ -834,14 +913,15 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
     portfolio = st.session_state.portfolio
 
     # Create tabs for different views
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
         "📊 Übersicht",
         "📈 Benchmark",
         "💰 Sparplan",
         "🏦 Entnahme",
         "🎯 Efficient Frontier",
         "🎭 Szenarien",
-        "📥 Export"
+        "📥 Export",
+        "💶 Steuern & Kosten"
     ])
 
     # Calculate common metrics
@@ -1576,7 +1656,8 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 var_value=var_value,
                 cvar_value=cvar_value,
                 confidence_level=confidence_level,
-                metrics=metrics
+                metrics=metrics,
+                tax_cost_results=st.session_state.get('tax_cost_results')
             )
 
             st.download_button(
@@ -1594,7 +1675,8 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
             csv_data = create_csv_report(
                 portfolio=portfolio,
                 results=results,
-                initial_value=initial_value
+                initial_value=initial_value,
+                tax_cost_results=st.session_state.get('tax_cost_results')
             )
 
             st.download_button(
@@ -1639,6 +1721,144 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
         st.dataframe(pd.DataFrame(summary_data), use_container_width=True)
 
+    # TAB 8: Taxes & Costs
+    with tab8:
+        st.header("💶 Steuern & Transaktionskosten")
+
+        tax_cost_results = st.session_state.get('tax_cost_results')
+
+        if tax_cost_results is not None:
+            # Summary metrics
+            col1, col2, col3, col4 = st.columns(4)
+
+            with col1:
+                st.metric(
+                    "Endwert vor Steuern",
+                    format_currency(tax_cost_results.mean_final_before_tax),
+                    help="Durchschnittlicher Endwert ohne Abzüge"
+                )
+
+            with col2:
+                delta_pct = -tax_cost_results.total_cost_impact * 100
+                st.metric(
+                    "Endwert nach Steuern",
+                    format_currency(tax_cost_results.mean_final_after_tax),
+                    f"{delta_pct:.1f}%",
+                    help="Nach Abzug aller Steuern und Kosten"
+                )
+
+            with col3:
+                st.metric(
+                    "Ø Gezahlte Steuern",
+                    format_currency(tax_cost_results.mean_taxes_paid),
+                    help="Durchschnittliche KESt"
+                )
+
+            with col4:
+                st.metric(
+                    "Ø Transaktionskosten",
+                    format_currency(tax_cost_results.mean_transaction_costs),
+                    help="Durchschnittliche Broker-Gebühren"
+                )
+
+            st.markdown("---")
+
+            # Detailed breakdown
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.subheader("📊 Detaillierte Aufschlüsselung")
+                breakdown_data = {
+                    'Metrik': [
+                        'Anfangskapital',
+                        'Endwert (brutto)',
+                        'Realisierte Gewinne (Ø)',
+                        'Steuern (KESt) (Ø)',
+                        'Transaktionskosten (Ø)',
+                        'Endwert nach Steuern (Ø)',
+                        'Unrealisierte Gewinne (Ø)',
+                        'Rebalancing-Events (Ø)',
+                        'Effektiver Steuersatz'
+                    ],
+                    'Wert': [
+                        format_currency(initial_value),
+                        format_currency(tax_cost_results.mean_final_before_tax),
+                        format_currency(tax_cost_results.mean_realized_gains),
+                        format_currency(tax_cost_results.mean_taxes_paid),
+                        format_currency(tax_cost_results.mean_transaction_costs),
+                        format_currency(tax_cost_results.mean_final_after_tax),
+                        format_currency(tax_cost_results.mean_unrealized_gains),
+                        f"{tax_cost_results.mean_rebalancing_events:.1f}",
+                        f"{tax_cost_results.effective_tax_rate * 100:.1f}%"
+                    ]
+                }
+                st.dataframe(pd.DataFrame(breakdown_data), use_container_width=True, hide_index=True)
+
+            with col2:
+                st.subheader("📈 Perzentile nach Steuern")
+                percentile_data = {
+                    'Perzentil': ['5%', '25%', '50% (Median)', '75%', '95%'],
+                    'Endwert': [
+                        format_currency(tax_cost_results.get_percentile_after_tax(5)),
+                        format_currency(tax_cost_results.get_percentile_after_tax(25)),
+                        format_currency(tax_cost_results.median_final_after_tax),
+                        format_currency(tax_cost_results.get_percentile_after_tax(75)),
+                        format_currency(tax_cost_results.get_percentile_after_tax(95))
+                    ]
+                }
+                st.dataframe(pd.DataFrame(percentile_data), use_container_width=True, hide_index=True)
+
+            st.markdown("---")
+
+            # Comparison chart
+            st.subheader("📊 Vergleich: Vor vs. Nach Steuern")
+            import plotly.graph_objects as go
+
+            fig = go.Figure()
+            fig.add_trace(go.Bar(
+                name='Vor Steuern',
+                x=['Durchschnitt', 'Median'],
+                y=[tax_cost_results.mean_final_before_tax, np.median(tax_cost_results.final_value_before_tax)],
+                marker_color='#2E86AB'
+            ))
+            fig.add_trace(go.Bar(
+                name='Nach Steuern',
+                x=['Durchschnitt', 'Median'],
+                y=[tax_cost_results.mean_final_after_tax, tax_cost_results.median_final_after_tax],
+                marker_color='#A23B72'
+            ))
+            fig.update_layout(
+                barmode='group',
+                title='Endwert-Vergleich',
+                yaxis_title='Endwert (€)',
+                height=400
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+            # Info section
+            with st.expander("ℹ️ Erklärungen"):
+                st.markdown(f"""
+                ### Österreichische KESt (Kapitalertragssteuer)
+                Die **KESt** beträgt **{tax_cost_results.tax_rate * 100:.1f}%** auf realisierte Kapitalerträge.
+
+                **Wann wird Steuer fällig?**
+                - Bei jedem **Rebalancing** werden Gewinne realisiert
+                - Steuer nur auf **positive Gewinne** (keine Steuer bei Verlust)
+                - **Unrealisierte Gewinne** erst bei Verkauf besteuert
+
+                ### Tipps zur Steueroptimierung
+                1. **Weniger Rebalancing** = weniger realisierte Gewinne
+                2. **Threshold-Rebalancing** statt zeitbasiert
+                3. **Buy & Hold** vermeidet Steuern bis zum Verkauf
+                """)
+        else:
+            if not enable_tax_costs:
+                st.info("👈 Aktivieren Sie 'Steuern & Transaktionskosten' in der Seitenleiste.")
+            elif rebalancing_option == "Kein Rebalancing (Buy & Hold)":
+                st.info("📊 Bei Buy & Hold entstehen keine realisierten Gewinne. Wählen Sie eine Rebalancing-Strategie.")
+            else:
+                st.warning("Keine Steuer-/Kostendaten verfügbar. Bitte Simulation erneut starten.")
+
 else:
     # Welcome message
     st.info("👈 Konfigurieren Sie Ihr Portfolio in der Seitenleiste und klicken Sie auf 'Simulation starten'.")
@@ -1672,6 +1892,17 @@ else:
     st.markdown("---")
     with st.expander("🆕 **Was ist neu?** - Aktuelle Updates", expanded=False):
         st.markdown("""
+        ### Version 1.1.0 (Februar 2025)
+
+        #### 💶 NEU: Steuer- und Kostenrechner
+        - **Österreichische KESt (27,5%)** auf realisierte Gewinne bei Rebalancing
+        - **Transaktionskosten**: Prozentual (0,1%) oder Flat Fee (€5 pro Trade)
+        - Neuer Tab "Steuern & Kosten" mit detaillierter Aufschlüsselung
+        - Vergleich: Endwert vor vs. nach Steuern
+        - Cost-Basis-Tracking für korrekte Gewinnberechnung
+
+        ---
+
         ### Version 1.0.1 (Februar 2025)
 
         #### 🔧 Verbesserungen
@@ -1713,9 +1944,9 @@ else:
         ---
 
         ### Geplante Features 🚀
-        - 💶 Steuer- und Kostenrechner (KESt)
         - 📊 Backtesting
         - 🔄 Eigene Szenarien erstellen
+        - 📄 PDF-Export
         """)
 
     # Ausführliche Einführung für Laien
