@@ -526,6 +526,37 @@ with st.sidebar:
         help="z.B. AAPL, MSFT, GOOGL oder ISINs wie US0378331005, DE0007164600"
     )
 
+    # Asset Class Examples
+    with st.expander("📚 Beliebte Ticker nach Asset-Klasse", expanded=False):
+        st.markdown("""
+        **🏢 Aktien (Einzeltitel)**
+        - `AAPL` Apple, `MSFT` Microsoft, `GOOGL` Google, `AMZN` Amazon, `NVDA` Nvidia
+
+        **📈 Aktien-ETFs (breit diversifiziert)**
+        - `VTI` Total US Market, `VOO` S&P 500, `QQQ` NASDAQ 100
+        - `VGK` Europa, `EEM` Emerging Markets, `VT` Welt
+
+        **🏠 Immobilien (REITs)** ⭐
+        - `VNQ` Vanguard Real Estate ETF (USA)
+        - `VNQI` Vanguard Global ex-US Real Estate
+        - `IYR` iShares US Real Estate
+        - `O` Realty Income (Dividenden-REIT)
+        - `AMT` American Tower (Infrastruktur-REIT)
+
+        *REITs bieten: Inflationsschutz, Dividenden, niedrige Korrelation zu Tech-Aktien*
+
+        **💵 Anleihen**
+        - `BND` Total Bond Market, `TLT` 20+ Year Treasury
+        - `AGG` Core US Aggregate Bond
+
+        **🥇 Rohstoffe**
+        - `GLD` Gold, `SLV` Silber, `DBC` Rohstoff-Basket
+
+        **💶 Geldmarkt (sehr sicher)**
+        - `SGOV` 0-3 Month Treasury, `BIL` 1-3 Month T-Bill
+        """)
+        st.info("💡 **Tipp**: REITs + Aktien + Anleihen = klassisches diversifiziertes Portfolio")
+
     # Process inputs (handle both tickers and ISINs)
     raw_inputs = [t.strip() for t in tickers_input.split(",") if t.strip()]
     tickers = []
@@ -563,7 +594,8 @@ with st.sidebar:
         "QQQ": "NASDAQ 100 (USA) – Die 100 größten Tech-Unternehmen",
         "^GDAXI": "DAX (Deutschland) – Die 40 größten deutschen Unternehmen",
         "^STOXX50E": "Euro Stoxx 50 (Europa) – Die 50 größten Eurozone-Unternehmen",
-        "VTI": "Total Stock Market (USA) – Der gesamte US-Aktienmarkt"
+        "VTI": "Total Stock Market (USA) – Der gesamte US-Aktienmarkt",
+        "VNQ": "REITs (USA) – Immobilien-Aktien mit Inflationsschutz"
     }
     benchmark_display = st.selectbox(
         "Benchmark",
@@ -1114,6 +1146,15 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
    - Wenn Anlage A steigt während Anlage B fällt → negative Korrelation
 
 **Tipp:** Kombinieren Sie Anlagen mit niedriger oder negativer Korrelation, um das Gesamtrisiko zu reduzieren.
+
+**Typische Korrelationen zwischen Asset-Klassen:**
+| Kombination | Korrelation | Kommentar |
+|-------------|-------------|-----------|
+| Tech-Aktien untereinander | 0.7 - 0.9 | Hoch – wenig Diversifikation |
+| Aktien + Anleihen | 0.0 - 0.3 | Niedrig – klassische Diversifikation |
+| Aktien + REITs | 0.5 - 0.7 | Mittel – REITs bieten Inflationsschutz |
+| Aktien + Gold | -0.1 - 0.2 | Sehr niedrig – Krisenabsicherung |
+| REITs + Inflation | Positiv | REITs steigen oft mit der Inflation |
             """)
         corr_matrix = portfolio.get_correlation_matrix()
         fig_corr = plot_correlation_heatmap(corr_matrix, portfolio.tickers)
