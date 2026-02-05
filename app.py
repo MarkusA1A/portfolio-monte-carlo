@@ -53,6 +53,44 @@ import yfinance as yf
 import re
 
 
+@st.cache_data(ttl=3600)  # Cache for 1 hour
+def get_code_statistics() -> dict:
+    """Count lines of code in the project."""
+    base_path = Path(__file__).parent
+    stats = {
+        'app': 0,
+        'src': 0,
+        'tests': 0,
+        'total': 0,
+        'files': 0
+    }
+
+    # Count app.py
+    app_file = base_path / 'app.py'
+    if app_file.exists():
+        stats['app'] = len(app_file.read_text().splitlines())
+        stats['files'] += 1
+
+    # Count src/ files
+    src_path = base_path / 'src'
+    if src_path.exists():
+        for py_file in src_path.rglob('*.py'):
+            if '__pycache__' not in str(py_file):
+                stats['src'] += len(py_file.read_text().splitlines())
+                stats['files'] += 1
+
+    # Count tests/ files
+    tests_path = base_path / 'tests'
+    if tests_path.exists():
+        for py_file in tests_path.rglob('*.py'):
+            if '__pycache__' not in str(py_file):
+                stats['tests'] += len(py_file.read_text().splitlines())
+                stats['files'] += 1
+
+    stats['total'] = stats['app'] + stats['src'] + stats['tests']
+    return stats
+
+
 def is_isin(text: str) -> bool:
     """Check if text looks like an ISIN (12 chars, starts with 2 letters)."""
     if len(text) != 12:
@@ -2039,6 +2077,22 @@ else:
         - 📊 Backtesting
         - 🔄 Eigene Szenarien erstellen
         - 📄 PDF-Export
+        """)
+
+    # Code Statistics Section
+    with st.expander("📊 **Code-Statistik** - Projektumfang", expanded=False):
+        code_stats = get_code_statistics()
+        st.markdown(f"""
+        ### Projektumfang
+
+        | Bereich | Zeilen | Anteil |
+        |---------|--------|--------|
+        | **app.py** (Hauptanwendung) | {code_stats['app']:,} | {code_stats['app']/code_stats['total']*100:.0f}% |
+        | **src/** (Kernmodule) | {code_stats['src']:,} | {code_stats['src']/code_stats['total']*100:.0f}% |
+        | **tests/** (Tests) | {code_stats['tests']:,} | {code_stats['tests']/code_stats['total']*100:.0f}% |
+        | **Gesamt** | **{code_stats['total']:,}** | 100% |
+
+        *{code_stats['files']} Python-Dateien*
         """)
 
     # Ausführliche Einführung für Laien
