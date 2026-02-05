@@ -1300,8 +1300,33 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
         adjust_for_inflation = st.checkbox(
             "Entnahme an Inflation anpassen",
             value=True,
-            help="Erhöht die Entnahme jährlich um die Inflationsrate, um die Kaufkraft zu erhalten"
+            help="Erhöht die Entnahme jährlich um die Inflationsrate, um die Kaufkraft zu erhalten",
+            key="adjust_for_inflation"
         )
+
+        # Steuer-Optionen
+        st.subheader("💶 Steuern bei Entnahme")
+
+        apply_withdrawal_tax = st.checkbox(
+            "Kapitalertragssteuer berücksichtigen",
+            value=False,
+            help="Berechnet KESt auf realisierte Gewinne bei Entnahmen. "
+                 "Bei jeder Entnahme wird der Gewinnanteil versteuert.",
+            key="apply_withdrawal_tax"
+        )
+
+        if apply_withdrawal_tax:
+            withdrawal_tax_rate = st.slider(
+                "Steuersatz (%)",
+                min_value=0.0,
+                max_value=50.0,
+                value=27.5,
+                step=0.5,
+                help="Österreichische KESt: 27,5%",
+                key="withdrawal_tax_rate"
+            ) / 100
+        else:
+            withdrawal_tax_rate = None
 
         # Calculate withdrawal rate
         annual_withdrawal = monthly_withdrawal * 12
@@ -1309,25 +1334,34 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
         st.info(f"**Entnahmerate**: {withdrawal_rate:.1f}% p.a. (Die '4%-Regel' gilt als konservativ)")
 
-        # Use form to prevent page jump on button click
-        with st.form(key="withdrawal_form"):
-            submitted = st.form_submit_button("🏦 Entnahme simulieren", use_container_width=True)
+        # Simulation Button
+        if st.button("🏦 Entnahme simulieren", use_container_width=True, key="run_withdrawal_sim"):
+            # Sofortige Benachrichtigung
+            st.toast("🏦 Simulation gestartet!", icon="🚀")
 
-            if submitted:
-                with st.spinner("Simuliere Entnahme-Szenarien..."):
-                    simulator = WithdrawalSimulator(n_simulations=5000)
+            # Prominenter Fortschrittscontainer
+            with st.status("🔄 **Entnahme-Simulation läuft...**", expanded=True) as status:
+                st.write("⏳ Initialisiere 5.000 Simulationen...")
+                simulator = WithdrawalSimulator(n_simulations=5000)
 
-                    withdrawal_results = simulator.simulate(
-                        initial_value=withdrawal_initial,
-                        monthly_withdrawal=monthly_withdrawal,
-                        expected_annual_return=withdrawal_return,
-                        annual_volatility=withdrawal_volatility,
-                        years=withdrawal_years,
-                        inflation_rate=withdrawal_inflation,
-                        adjust_for_inflation=adjust_for_inflation
-                    )
+                st.write(f"📊 Simuliere {withdrawal_years} Jahre Entnahmephase...")
+                withdrawal_results = simulator.simulate(
+                    initial_value=withdrawal_initial,
+                    monthly_withdrawal=monthly_withdrawal,
+                    expected_annual_return=withdrawal_return,
+                    annual_volatility=withdrawal_volatility,
+                    years=withdrawal_years,
+                    inflation_rate=withdrawal_inflation,
+                    adjust_for_inflation=adjust_for_inflation,
+                    tax_rate=withdrawal_tax_rate,
+                    apply_tax_to_gains=apply_withdrawal_tax
+                )
 
-                    st.session_state.withdrawal_results = withdrawal_results
+                st.write("✅ Analyse abgeschlossen!")
+                st.session_state.withdrawal_results = withdrawal_results
+                status.update(label="✅ **Simulation abgeschlossen!**", state="complete", expanded=False)
+
+            st.toast("✅ Ergebnisse bereit!", icon="✅")
 
         # Display results
         if st.session_state.withdrawal_results is not None:
@@ -1368,6 +1402,44 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                         )
                     else:
                         st.metric("Früheste Erschöpfung", "Nie", f"Geld reicht bis {end_age}", help="Gute Nachricht: In keiner Simulation war das Geld vor dem geplanten Ende aufgebraucht.")
+
+            # Steuer-Übersicht (wenn aktiviert)
+            if wr.tax_results is not None:
+                st.markdown("---")
+                st.subheader("💶 Steuerübersicht")
+
+                tax_cols = st.columns(4)
+                with tax_cols[0]:
+                    st.metric(
+                        "Brutto entnommen (Ø)",
+                        format_currency(wr.tax_results.mean_gross_withdrawn),
+                        help="Durchschnittliche Gesamtsumme der Brutto-Entnahmen über alle Simulationen"
+                    )
+                with tax_cols[1]:
+                    st.metric(
+                        "Steuern (KESt) (Ø)",
+                        format_currency(wr.tax_results.mean_taxes_paid),
+                        help="Durchschnittlich gezahlte Kapitalertragssteuer über alle Simulationen"
+                    )
+                with tax_cols[2]:
+                    st.metric(
+                        "Netto erhalten (Ø)",
+                        format_currency(wr.tax_results.mean_net_withdrawn),
+                        help="Durchschnittliche Netto-Entnahme nach Abzug der Steuern"
+                    )
+                with tax_cols[3]:
+                    st.metric(
+                        "Effektiver Steuersatz",
+                        f"{wr.tax_results.effective_tax_rate:.1%}",
+                        help=f"Tatsächlicher Steuersatz: Gezahlte Steuern / Realisierte Gewinne. "
+                             f"Nomineller Satz: {wr.tax_results.tax_rate:.1%}"
+                    )
+
+                # Zusätzliche Info
+                st.info(
+                    f"📊 **Realisierte Gewinne (Ø)**: {format_currency(wr.tax_results.mean_realized_gains)} — "
+                    f"Davon {wr.tax_results.tax_rate:.1%} KESt = {format_currency(wr.tax_results.mean_taxes_paid)}"
+                )
 
             # Charts
             st.subheader("Vermögensentwicklung")
@@ -1415,30 +1487,40 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
             )
             target_success = target_success_pct / 100.0
 
-            # Use form to prevent page jump
-            with st.form(key="swr_form"):
-                swr_submitted = st.form_submit_button("Sichere Entnahmerate berechnen", use_container_width=True)
+            # SWR Button
+            if st.button("Sichere Entnahmerate berechnen", use_container_width=True, key="run_swr_calc"):
+                # Sofortige Benachrichtigung
+                st.toast("💡 SWR-Berechnung gestartet!", icon="🚀")
 
-                if swr_submitted:
-                    with st.spinner("Berechne optimale Entnahmerate..."):
-                        simulator = WithdrawalSimulator(n_simulations=3000)
-                        swr_result = simulator.find_safe_withdrawal_rate(
-                            initial_value=withdrawal_initial,
-                            expected_annual_return=withdrawal_return,
-                            annual_volatility=withdrawal_volatility,
-                            years=withdrawal_years,
-                            target_success_rate=target_success,
-                            inflation_rate=withdrawal_inflation,
-                            adjust_for_inflation=adjust_for_inflation
-                        )
+                # Prominenter Fortschrittscontainer
+                with st.status("🔄 **Berechne sichere Entnahmerate...**", expanded=True) as status:
+                    st.write("⏳ Initialisiere binäre Suche...")
+                    simulator = WithdrawalSimulator(n_simulations=3000)
 
-                        st.session_state.swr_result = swr_result
-                        st.session_state.swr_params = {
-                            'target_success': target_success,
-                            'start_age': start_age,
-                            'end_age': end_age,
-                            'withdrawal_years': withdrawal_years
-                        }
+                    st.write(f"📊 Optimiere für {target_success*100:.0f}% Erfolgsrate...")
+                    swr_result = simulator.find_safe_withdrawal_rate(
+                        initial_value=withdrawal_initial,
+                        expected_annual_return=withdrawal_return,
+                        annual_volatility=withdrawal_volatility,
+                        years=withdrawal_years,
+                        target_success_rate=target_success,
+                        inflation_rate=withdrawal_inflation,
+                        adjust_for_inflation=adjust_for_inflation,
+                        tax_rate=withdrawal_tax_rate,
+                        apply_tax_to_gains=apply_withdrawal_tax
+                    )
+
+                    st.write("✅ Optimale Rate gefunden!")
+                    st.session_state.swr_result = swr_result
+                    st.session_state.swr_params = {
+                        'target_success': target_success,
+                        'start_age': start_age,
+                        'end_age': end_age,
+                        'withdrawal_years': withdrawal_years
+                    }
+                    status.update(label="✅ **Berechnung abgeschlossen!**", state="complete", expanded=False)
+
+                st.toast("✅ Ergebnis bereit!", icon="✅")
 
             # Display SWR result if available
             if 'swr_result' in st.session_state and st.session_state.swr_result is not None:
@@ -1892,9 +1974,19 @@ else:
     st.markdown("---")
     with st.expander("🆕 **Was ist neu?** - Aktuelle Updates", expanded=False):
         st.markdown("""
+        ### Version 1.2.0 (Februar 2025)
+
+        #### 💶 NEU: Steuern bei Entnahme
+        - **KESt-Berechnung im Entnahmeplan**: Bei jeder Entnahme wird der Gewinnanteil versteuert
+        - Neuer Abschnitt "Steuerübersicht" mit Brutto/Netto-Entnahmen
+        - Effektiver Steuersatz über die gesamte Entnahmephase
+        - SWR-Berechnung berücksichtigt nun auch Steuern
+
+        ---
+
         ### Version 1.1.0 (Februar 2025)
 
-        #### 💶 NEU: Steuer- und Kostenrechner
+        #### 💶 Steuer- und Kostenrechner bei Rebalancing
         - **Österreichische KESt (27,5%)** auf realisierte Gewinne bei Rebalancing
         - **Transaktionskosten**: Prozentual (0,1%) oder Flat Fee (€5 pro Trade)
         - Neuer Tab "Steuern & Kosten" mit detaillierter Aufschlüsselung

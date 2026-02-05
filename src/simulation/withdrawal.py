@@ -6,8 +6,42 @@ Wichtig für die Ruhestandsplanung: "Wie lange reicht mein Geld?"
 """
 
 import numpy as np
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
+
+
+@dataclass
+class WithdrawalTaxResults:
+    """Steuer-Ergebnisse der Entnahme-Simulation."""
+    total_taxes_paid: np.ndarray          # Pro Simulation
+    total_gross_withdrawn: np.ndarray     # Brutto-Entnahmen
+    total_net_withdrawn: np.ndarray       # Netto nach Steuer
+    realized_gains: np.ndarray            # Realisierte Gewinne
+    tax_rate: float = 0.275               # KESt-Satz
+
+    @property
+    def mean_taxes_paid(self) -> float:
+        return float(np.mean(self.total_taxes_paid))
+
+    @property
+    def mean_gross_withdrawn(self) -> float:
+        return float(np.mean(self.total_gross_withdrawn))
+
+    @property
+    def mean_net_withdrawn(self) -> float:
+        return float(np.mean(self.total_net_withdrawn))
+
+    @property
+    def mean_realized_gains(self) -> float:
+        return float(np.mean(self.realized_gains))
+
+    @property
+    def effective_tax_rate(self) -> float:
+        """Effektiver Steuersatz (gezahlte Steuern / realisierte Gewinne)."""
+        gains = self.mean_realized_gains
+        if gains <= 0:
+            return 0.0
+        return self.mean_taxes_paid / gains
 
 
 @dataclass
@@ -43,6 +77,9 @@ class WithdrawalResults:
     # Entnahme-Statistiken
     total_withdrawn_median: float  # Median der Gesamtentnahmen
     total_withdrawn_mean: float
+
+    # Steuer-Ergebnisse (optional)
+    tax_results: Optional[WithdrawalTaxResults] = field(default=None)
 
     @property
     def failure_rate(self) -> float:
@@ -95,7 +132,9 @@ class WithdrawalSimulator:
         annual_volatility: float,
         years: int,
         inflation_rate: float = 0.02,
-        adjust_for_inflation: bool = True
+        adjust_for_inflation: bool = True,
+        tax_rate: Optional[float] = None,
+        apply_tax_to_gains: bool = False
     ) -> WithdrawalResults:
         """
         Führt die Entnahme-Simulation durch.
@@ -108,6 +147,8 @@ class WithdrawalSimulator:
             years: Simulationszeitraum in Jahren
             inflation_rate: Jährliche Inflation (für Kaufkraftanpassung)
             adjust_for_inflation: Entnahme an Inflation anpassen?
+            tax_rate: Steuersatz (z.B. 0.275 für österreichische KESt)
+            apply_tax_to_gains: Steuer auf realisierte Gewinne bei Entnahmen?
 
         Returns:
             WithdrawalResults mit allen Ergebnissen
@@ -126,28 +167,62 @@ class WithdrawalSimulator:
         withdrawal_paths = np.zeros((self.n_simulations, n_months))
         depletion_times = np.full(self.n_simulations, np.inf)
 
+        # Steuer-Tracking (wenn aktiviert)
+        if apply_tax_to_gains and tax_rate:
+            taxes_paid = np.zeros((self.n_simulations, n_months))
+            realized_gains = np.zeros((self.n_simulations, n_months))
+        else:
+            taxes_paid = None
+            realized_gains = None
+
         # Simulation durchführen
         for sim in range(self.n_simulations):
             current_value = initial_value
             current_withdrawal = monthly_withdrawal
+            cost_basis = initial_value  # Einstandswert für Steuerberechnung
             depleted = False
 
             for month in range(n_months):
                 if depleted:
                     portfolio_paths[sim, month + 1] = 0
                     withdrawal_paths[sim, month] = 0
+                    if taxes_paid is not None:
+                        taxes_paid[sim, month] = 0
+                        realized_gains[sim, month] = 0
                     continue
 
                 # Entnahme (inflationsangepasst)
                 if adjust_for_inflation:
                     current_withdrawal = monthly_withdrawal * ((1 + monthly_inflation) ** month)
 
-                # Tatsächliche Entnahme (maximal verfügbares Vermögen)
-                actual_withdrawal = min(current_withdrawal, current_value)
-                withdrawal_paths[sim, month] = actual_withdrawal
+                # Tatsächliche (Brutto-)Entnahme (maximal verfügbares Vermögen)
+                gross_withdrawal = min(current_withdrawal, current_value)
 
-                # Nach Entnahme
-                current_value -= actual_withdrawal
+                # STEUERBERECHNUNG (wenn aktiviert)
+                tax = 0.0
+                if apply_tax_to_gains and tax_rate and current_value > cost_basis and gross_withdrawal > 0:
+                    # Gewinnanteil im Portfolio
+                    gain_ratio = (current_value - cost_basis) / current_value
+                    # Realisierter Gewinn durch diese Entnahme
+                    realized_gain = gross_withdrawal * gain_ratio
+                    # Steuer auf realisierten Gewinn
+                    tax = realized_gain * tax_rate
+
+                    # Tracking
+                    taxes_paid[sim, month] = tax
+                    realized_gains[sim, month] = realized_gain
+
+                    # Cost Basis proportional reduzieren
+                    if current_value > 0:
+                        withdrawal_ratio = gross_withdrawal / current_value
+                        cost_basis *= (1 - withdrawal_ratio)
+
+                # Brutto-Entnahme tracken
+                withdrawal_paths[sim, month] = gross_withdrawal
+
+                # Portfolio nach Entnahme und Steuer
+                current_value -= gross_withdrawal
+                current_value -= tax  # Steuer zusätzlich vom Portfolio abziehen
 
                 if current_value <= 0:
                     depleted = True
@@ -185,6 +260,21 @@ class WithdrawalSimulator:
         median_depletion = np.median(failed_times) if len(failed_times) > 0 else None
         earliest_depletion = int(np.min(failed_times)) if len(failed_times) > 0 else None
 
+        # Steuer-Ergebnisse erstellen (wenn aktiviert)
+        tax_results = None
+        if apply_tax_to_gains and tax_rate and taxes_paid is not None:
+            total_taxes = np.sum(taxes_paid, axis=1)
+            total_gains = np.sum(realized_gains, axis=1)
+            net_withdrawn = total_withdrawn - total_taxes
+
+            tax_results = WithdrawalTaxResults(
+                total_taxes_paid=total_taxes,
+                total_gross_withdrawn=total_withdrawn,
+                total_net_withdrawn=net_withdrawn,
+                realized_gains=total_gains,
+                tax_rate=tax_rate
+            )
+
         return WithdrawalResults(
             portfolio_paths=portfolio_paths,
             withdrawal_paths=withdrawal_paths,
@@ -204,7 +294,8 @@ class WithdrawalSimulator:
             median_depletion_time=median_depletion,
             earliest_depletion=earliest_depletion,
             total_withdrawn_median=np.median(total_withdrawn),
-            total_withdrawn_mean=np.mean(total_withdrawn)
+            total_withdrawn_mean=np.mean(total_withdrawn),
+            tax_results=tax_results
         )
 
     def find_safe_withdrawal_rate(
@@ -215,7 +306,9 @@ class WithdrawalSimulator:
         years: int,
         target_success_rate: float = 0.95,
         inflation_rate: float = 0.02,
-        adjust_for_inflation: bool = True
+        adjust_for_inflation: bool = True,
+        tax_rate: Optional[float] = None,
+        apply_tax_to_gains: bool = False
     ) -> dict:
         """
         Findet die sichere Entnahmerate (SWR) für eine Zielerfolgsrate.
@@ -231,6 +324,8 @@ class WithdrawalSimulator:
             target_success_rate: Gewünschte Erfolgsrate (z.B. 0.95 = 95%)
             inflation_rate: Jährliche Inflation
             adjust_for_inflation: Entnahme an Inflation anpassen?
+            tax_rate: Steuersatz (z.B. 0.275 für österreichische KESt)
+            apply_tax_to_gains: Steuer auf realisierte Gewinne bei Entnahmen?
 
         Returns:
             Dictionary mit SWR-Ergebnissen
@@ -252,7 +347,9 @@ class WithdrawalSimulator:
                 annual_volatility=annual_volatility,
                 years=years,
                 inflation_rate=inflation_rate,
-                adjust_for_inflation=adjust_for_inflation
+                adjust_for_inflation=adjust_for_inflation,
+                tax_rate=tax_rate,
+                apply_tax_to_gains=apply_tax_to_gains
             )
 
             if results.success_rate >= target_success_rate:
@@ -274,7 +371,9 @@ class WithdrawalSimulator:
                 annual_volatility=annual_volatility,
                 years=years,
                 inflation_rate=inflation_rate,
-                adjust_for_inflation=adjust_for_inflation
+                adjust_for_inflation=adjust_for_inflation,
+                tax_rate=tax_rate,
+                apply_tax_to_gains=apply_tax_to_gains
             )
 
         annual_rate = (best_withdrawal * 12) / initial_value
@@ -297,7 +396,9 @@ def calculate_required_capital(
     years: int,
     target_success_rate: float = 0.95,
     inflation_rate: float = 0.02,
-    n_simulations: int = 5000
+    n_simulations: int = 5000,
+    tax_rate: Optional[float] = None,
+    apply_tax_to_gains: bool = False
 ) -> dict:
     """
     Berechnet das benötigte Anfangskapital für eine gewünschte monatliche Entnahme.
@@ -310,6 +411,8 @@ def calculate_required_capital(
         target_success_rate: Gewünschte Erfolgsrate
         inflation_rate: Jährliche Inflation
         n_simulations: Anzahl Simulationen
+        tax_rate: Steuersatz (z.B. 0.275 für österreichische KESt)
+        apply_tax_to_gains: Steuer auf realisierte Gewinne bei Entnahmen?
 
     Returns:
         Dictionary mit Kapitalanforderungen
@@ -335,7 +438,9 @@ def calculate_required_capital(
             annual_volatility=annual_volatility,
             years=years,
             inflation_rate=inflation_rate,
-            adjust_for_inflation=True
+            adjust_for_inflation=True,
+            tax_rate=tax_rate,
+            apply_tax_to_gains=apply_tax_to_gains
         )
 
         if results.success_rate >= target_success_rate:
