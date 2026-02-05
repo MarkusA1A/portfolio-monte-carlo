@@ -1668,6 +1668,56 @@ else:
         - 📥 **Export**: Excel & CSV Reports
         """)
 
+    # What's New / Updates Section
+    st.markdown("---")
+    with st.expander("🆕 **Was ist neu?** - Aktuelle Updates", expanded=False):
+        st.markdown("""
+        ### Version 1.0.1 (Februar 2025)
+
+        #### 🔧 Verbesserungen
+        - Hilfetexte für Rebalancing-Strategien hinzugefügt
+        - VaR Konfidenzlevel-Erklärungen verbessert
+        - Copyright-Hinweis im Header
+
+        ---
+
+        ### Version 1.0.0 (Januar 2025)
+
+        #### 📊 Kern-Features
+        - Monte Carlo Simulation mit bis zu 50.000 Pfaden
+        - Rebalancing-Strategien (Buy & Hold, Monatlich, Quartalsweise, Threshold)
+        - VaR/CVaR Risikoanalyse mit konfigurierbarem Konfidenzlevel
+        - Sharpe Ratio, Sortino Ratio, Max Drawdown
+
+        #### 📈 Benchmark & Analyse
+        - Benchmark-Vergleich (S&P 500, DAX, Euro Stoxx 50, etc.)
+        - Beta, Alpha, Information Ratio
+        - Efficient Frontier Portfolio-Optimierung
+        - Korrelationsmatrix
+
+        #### 💰 Planungs-Tools
+        - **Sparplan-Simulation**: Monatliche Einzahlungen simulieren
+        - **Entnahme-Simulation**: Ruhestandsplanung mit Inflationsanpassung
+        - **Safe Withdrawal Rate Calculator**: Optimale Entnahmerate berechnen
+
+        #### 🎭 Szenarien & Stress-Tests
+        - Bullenmarkt, Bärenmarkt, Crash, Stagflation
+        - Hohe Volatilität Szenarien
+
+        #### 📱 UI/UX
+        - Mobile-optimiert (iPhone/iPad)
+        - Responsive Design
+        - Deutschsprachige Oberfläche
+        - Excel/CSV Export
+
+        ---
+
+        ### Geplante Features 🚀
+        - 💶 Steuer- und Kostenrechner (KESt)
+        - 📊 Backtesting
+        - 🔄 Eigene Szenarien erstellen
+        """)
+
     # Ausführliche Einführung für Laien
     st.markdown("---")
     st.header("📚 Einführung: Was ist Monte Carlo Simulation?")
