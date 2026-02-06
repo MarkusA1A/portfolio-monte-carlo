@@ -180,29 +180,317 @@ st.set_page_config(
     initial_sidebar_state="collapsed"  # Collapsed on mobile for better UX
 )
 
-# Custom CSS for responsive design (Mobile: iPhone, iPad)
+# Custom CSS for modern design + responsive layout (Mobile: iPhone, iPad)
 st.markdown("""
 <style>
-    /* === BASE RESPONSIVE STYLES === */
+    /* === GOOGLE FONTS === */
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    /* === CSS VARIABLES (Design Tokens) === */
+    :root {
+        --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+        --color-bg: #0e1117;
+        --color-surface: #161b22;
+        --color-surface-raised: #1c2333;
+        --color-border: rgba(255, 255, 255, 0.06);
+        --color-border-hover: rgba(255, 255, 255, 0.12);
+        --color-text: #e6edf3;
+        --color-text-muted: #8b949e;
+        --color-text-subtle: #6e7681;
+        --color-accent: #58a6ff;
+        --color-accent-soft: rgba(88, 166, 255, 0.12);
+        --color-success: #3fb950;
+        --color-success-soft: rgba(63, 185, 80, 0.12);
+        --color-warning: #d29922;
+        --color-warning-soft: rgba(210, 153, 34, 0.12);
+        --color-danger: #f85149;
+        --color-danger-soft: rgba(248, 81, 73, 0.12);
+        --radius-sm: 6px;
+        --radius-md: 10px;
+        --radius-lg: 14px;
+        --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+        --shadow-md: 0 4px 12px rgba(0,0,0,0.25);
+        --shadow-lg: 0 8px 24px rgba(0,0,0,0.3);
+        --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* === GLOBAL TYPOGRAPHY === */
+    html, body, [class*="css"] {
+        font-family: var(--font-sans) !important;
+    }
+    h1, h2, h3, h4, h5, h6,
+    [data-testid="stMarkdownContainer"] h1,
+    [data-testid="stMarkdownContainer"] h2,
+    [data-testid="stMarkdownContainer"] h3 {
+        font-family: var(--font-sans) !important;
+        font-weight: 600 !important;
+        letter-spacing: -0.02em;
+    }
+    code, pre, [data-testid="stCode"],
+    .stDataFrame td, .stDataFrame th {
+        font-family: var(--font-mono) !important;
+    }
+
+    /* === MAIN LAYOUT === */
+    .main .block-container {
+        max-width: 1200px;
+        padding-top: 2rem !important;
+    }
+
+    /* === HEADER STYLING === */
+    h1 {
+        font-size: 2rem !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.03em;
+        line-height: 1.2 !important;
+        margin-bottom: 0.25rem !important;
+    }
+    h2 {
+        font-size: 1.35rem !important;
+        font-weight: 600 !important;
+        letter-spacing: -0.02em;
+        margin-top: 1.5rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+    h3 {
+        font-size: 1.1rem !important;
+        font-weight: 600 !important;
+        letter-spacing: -0.01em;
+    }
+
+    /* === METRIC CARDS === */
+    [data-testid="stMetric"] {
+        background: var(--color-surface-raised);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: 1rem 1.1rem !important;
+        transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    [data-testid="stMetric"]:hover {
+        border-color: var(--color-border-hover);
+        box-shadow: var(--shadow-sm);
+    }
     [data-testid="stMetricValue"] {
-        font-size: clamp(1rem, 2.5vw, 1.5rem);
+        font-family: var(--font-mono) !important;
+        font-size: clamp(1.05rem, 2.5vw, 1.45rem);
+        font-weight: 500;
+        letter-spacing: -0.01em;
     }
     [data-testid="stMetricLabel"] {
-        font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+        font-family: var(--font-sans) !important;
+        font-size: clamp(0.72rem, 1.5vw, 0.88rem);
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--color-text-muted) !important;
     }
+    [data-testid="stMetricDelta"] {
+        font-family: var(--font-mono) !important;
+        font-size: 0.82rem;
+    }
+
+    /* === TABS === */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0;
+        border-bottom: 1px solid var(--color-border);
+        background: transparent;
+    }
+    .stTabs [data-baseweb="tab"] {
+        font-family: var(--font-sans) !important;
+        font-weight: 500;
+        font-size: 0.88rem;
+        letter-spacing: 0;
+        padding: 0.7rem 1.1rem;
+        border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+        border-bottom: 2px solid transparent;
+        transition: all var(--transition);
+        color: var(--color-text-muted);
+    }
+    .stTabs [data-baseweb="tab"]:hover {
+        color: var(--color-text);
+        background: var(--color-accent-soft);
+    }
+    .stTabs [data-baseweb="tab"][aria-selected="true"] {
+        color: var(--color-accent) !important;
+        border-bottom-color: var(--color-accent) !important;
+        font-weight: 600;
+    }
+
+    /* === SIDEBAR === */
+    [data-testid="stSidebar"] {
+        background: var(--color-surface) !important;
+        border-right: 1px solid var(--color-border);
+    }
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3 {
+        font-size: 1rem !important;
+        font-weight: 600 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--color-text-muted);
+        margin-top: 1.25rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    [data-testid="stSidebar"] .stSubheader {
+        border-bottom: 1px solid var(--color-border);
+        padding-bottom: 0.4rem;
+    }
+
+    /* === BUTTONS === */
+    .stButton button[kind="primary"],
+    .stFormSubmitButton button {
+        font-family: var(--font-sans) !important;
+        font-weight: 600 !important;
+        font-size: 0.92rem !important;
+        letter-spacing: 0.01em;
+        border-radius: var(--radius-md) !important;
+        padding: 0.7rem 1.5rem !important;
+        transition: all var(--transition);
+        box-shadow: var(--shadow-sm);
+    }
+    .stButton button[kind="primary"]:hover,
+    .stFormSubmitButton button:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-1px);
+    }
+    .stButton button:not([kind="primary"]),
+    .stDownloadButton button {
+        font-family: var(--font-sans) !important;
+        font-weight: 500 !important;
+        border-radius: var(--radius-md) !important;
+        transition: all var(--transition);
+    }
+
+    /* === INPUTS === */
+    .stTextInput input,
+    .stNumberInput input,
+    .stSelectbox [data-baseweb="select"],
+    .stMultiSelect [data-baseweb="select"] {
+        font-family: var(--font-sans) !important;
+        border-radius: var(--radius-sm) !important;
+        border: 1px solid var(--color-border) !important;
+        transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .stTextInput input:focus,
+    .stNumberInput input:focus {
+        border-color: var(--color-accent) !important;
+        box-shadow: 0 0 0 3px var(--color-accent-soft) !important;
+    }
+    .stTextInput label,
+    .stNumberInput label,
+    .stSelectbox label,
+    .stSlider label {
+        font-family: var(--font-sans) !important;
+        font-size: 0.85rem !important;
+        font-weight: 500;
+        color: var(--color-text-muted);
+    }
+
+    /* === DATAFRAMES === */
+    .stDataFrame {
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+    }
+
+    /* === PLOTLY CHARTS === */
     .js-plotly-plot {
         width: 100% !important;
+    }
+    .stPlotlyChart {
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        padding: 0.25rem;
+    }
+
+    /* === EXPANDERS === */
+    .streamlit-expanderHeader {
+        font-family: var(--font-sans) !important;
+        font-weight: 500 !important;
+        font-size: 0.92rem !important;
+        border-radius: var(--radius-sm);
+        transition: background var(--transition);
+    }
+    details[open] .streamlit-expanderHeader {
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    /* === ALERTS (st.info, st.warning, etc.) === */
+    .stAlert {
+        border-radius: var(--radius-md) !important;
+        font-family: var(--font-sans) !important;
+        font-size: 0.88rem;
+        border-left-width: 3px !important;
+    }
+
+    /* === DIVIDERS === */
+    hr {
+        border: none;
+        border-top: 1px solid var(--color-border);
+        margin: 1.5rem 0;
+    }
+
+    /* === PROGRESS BAR === */
+    .stProgress > div > div {
+        border-radius: 100px;
+        height: 6px;
+    }
+
+    /* === CUSTOM FOOTER CLASS === */
+    .app-footer {
+        text-align: center;
+        padding: 2rem 0 1rem;
+        border-top: 1px solid var(--color-border);
+        margin-top: 3rem;
+    }
+    .app-footer p {
+        color: var(--color-text-subtle);
+        font-size: 0.82rem;
+        line-height: 1.6;
+        margin: 0.2rem 0;
+    }
+    .app-footer a {
+        color: var(--color-accent);
+        text-decoration: none;
+    }
+    .app-footer a:hover {
+        text-decoration: underline;
+    }
+
+    /* === CUSTOM HEADER BADGE === */
+    .app-badge {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        font-weight: 500;
+        padding: 0.2rem 0.6rem;
+        border-radius: 100px;
+        background: var(--color-accent-soft);
+        color: var(--color-accent);
+        letter-spacing: 0.02em;
+        margin-left: 0.5rem;
+        vertical-align: middle;
+    }
+
+    /* === SECTION CARDS === */
+    .section-card {
+        background: var(--color-surface-raised);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        margin-bottom: 1rem;
     }
 
     /* === MOBILE STYLES (iPhone) === */
     @media (max-width: 768px) {
-        /* Main container padding */
         .main .block-container {
             padding: 1rem 0.75rem 5rem 0.75rem !important;
             max-width: 100% !important;
         }
 
-        /* Sidebar full width overlay on mobile */
         [data-testid="stSidebar"] {
             min-width: 100vw !important;
             width: 100vw !important;
@@ -211,12 +499,11 @@ st.markdown("""
             padding: 1rem;
         }
 
-        /* Horizontal scrollable tabs */
         .stTabs [data-baseweb="tab-list"] {
             overflow-x: auto;
             overflow-y: hidden;
             flex-wrap: nowrap !important;
-            gap: 0.25rem;
+            gap: 0;
             padding-bottom: 0.5rem;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
@@ -231,18 +518,18 @@ st.markdown("""
             flex-shrink: 0;
         }
 
-        /* Columns stack vertically */
         [data-testid="column"] {
             width: 100% !important;
             flex: 1 1 100% !important;
         }
 
-        /* Compact headers */
         h1 { font-size: 1.4rem !important; margin-bottom: 0.5rem !important; }
         h2 { font-size: 1.15rem !important; margin-top: 1rem !important; }
         h3 { font-size: 1rem !important; }
 
-        /* Compact metrics grid */
+        [data-testid="stMetric"] {
+            padding: 0.75rem 0.85rem !important;
+        }
         [data-testid="stMetricValue"] {
             font-size: 1rem !important;
             line-height: 1.2;
@@ -254,12 +541,10 @@ st.markdown("""
             font-size: 0.7rem !important;
         }
 
-        /* All inputs: prevent iOS zoom */
         input, select, textarea {
             font-size: 16px !important;
         }
 
-        /* Number inputs touch-friendly */
         .stNumberInput > div {
             flex-direction: column;
         }
@@ -268,7 +553,6 @@ st.markdown("""
             text-align: center;
         }
 
-        /* Buttons full width and touch-friendly */
         .stButton button, .stFormSubmitButton button {
             padding: 0.875rem 1rem !important;
             font-size: 1rem !important;
@@ -276,35 +560,31 @@ st.markdown("""
             min-height: 48px;
         }
 
-        /* Expanders more compact */
         .streamlit-expanderHeader {
             font-size: 0.9rem !important;
             padding: 0.5rem 0 !important;
         }
 
-        /* Forms tighter spacing */
         [data-testid="stForm"] {
             padding: 0.5rem !important;
         }
 
-        /* Charts responsive */
         .stPlotlyChart {
             margin: 0 -0.5rem;
+            border: none;
+            border-radius: 0;
         }
 
-        /* DataFrames scrollable */
         .stDataFrame {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
         }
 
-        /* Alerts compact */
         .stAlert {
             padding: 0.5rem 0.75rem !important;
             font-size: 0.85rem;
         }
 
-        /* Info/Warning/Success boxes */
         [data-testid="stNotificationContentInfo"],
         [data-testid="stNotificationContentWarning"],
         [data-testid="stNotificationContentSuccess"] {
@@ -312,22 +592,18 @@ st.markdown("""
             font-size: 0.85rem !important;
         }
 
-        /* Caption text */
         .stCaption {
             font-size: 0.75rem !important;
         }
 
-        /* Selectbox */
         .stSelectbox > div > div {
             min-height: 44px;
         }
 
-        /* Text inputs */
         .stTextInput input {
             padding: 0.75rem !important;
         }
 
-        /* Bottom safe area for iOS */
         .main {
             padding-bottom: env(safe-area-inset-bottom, 20px);
         }
@@ -361,7 +637,6 @@ st.markdown("""
 
     /* === TOUCH DEVICE IMPROVEMENTS === */
     @media (hover: none) and (pointer: coarse) {
-        /* Minimum touch target size (44px Apple HIG) */
         .stSlider [data-baseweb="slider"] {
             min-height: 44px;
             padding: 0.75rem 0;
@@ -380,7 +655,6 @@ st.markdown("""
             display: flex;
             align-items: center;
         }
-        /* Prevent accidental double-taps */
         button, a {
             touch-action: manipulation;
         }
@@ -389,15 +663,16 @@ st.markdown("""
     /* === DARK MODE ADJUSTMENTS === */
     @media (prefers-color-scheme: dark) {
         .stAlert {
-            border-radius: 8px;
+            border-radius: var(--radius-md);
         }
     }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("📈 Monte Carlo Portfolio Simulation")
-st.caption("© Markus O. Thalhamer")
-st.markdown("### 💰 *Show me the money*")
+st.markdown("""
+<h1 style="margin-bottom: 0.1rem;">Monte Carlo Portfolio Simulation <span class="app-badge">v1.3</span></h1>
+""", unsafe_allow_html=True)
+st.caption("von Markus O. Thalhamer")
 
 # Initialize session state
 for key in ['portfolio', 'results', 'loaded_config', 'benchmark_data',
@@ -1252,7 +1527,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                     x=list(range(savings_results.time_horizon + 1)),
                     y=savings_results.portfolio_values[i],
                     mode='lines',
-                    line=dict(width=0.5, color='rgba(100, 149, 237, 0.3)'),
+                    line=dict(width=0.5, color='rgba(88,166,255,0.18)'),
                     showlegend=False
                 ))
 
@@ -1262,7 +1537,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 y=savings_results.total_contributions,
                 mode='lines',
                 name='Einzahlungen',
-                line=dict(width=2, color='red', dash='dash')
+                line=dict(width=2, color='#f85149', dash='dash')
             ))
 
             # Median line
@@ -1272,14 +1547,23 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 y=median_values,
                 mode='lines',
                 name='Median',
-                line=dict(width=2, color='green')
+                line=dict(width=2.5, color='#3fb950')
             ))
 
             fig.update_layout(
                 title=f'Sparplan: €{monthly_contribution}/Monat über {time_horizon_years} Jahre',
                 xaxis_title='Monate',
                 yaxis_title='Portfolio Wert (€)',
-                yaxis_tickformat=',.0f'
+                yaxis_tickformat=',.0f',
+                font=dict(family='DM Sans, -apple-system, sans-serif', color='#e6edf3', size=13),
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                xaxis=dict(gridcolor='rgba(255,255,255,0.04)', tickfont=dict(color='#8b949e')),
+                yaxis=dict(gridcolor='rgba(255,255,255,0.04)', tickfont=dict(color='#8b949e')),
+                title_font=dict(size=16, color='#e6edf3'),
+                title_x=0,
+                legend=dict(font=dict(color='#8b949e'), bgcolor='rgba(0,0,0,0)'),
+                hoverlabel=dict(bgcolor='#161b22', font_color='#e6edf3', bordercolor='#58a6ff'),
             )
 
             st.plotly_chart(fig, use_container_width=True)
@@ -1801,10 +2085,20 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 x='Szenario',
                 y='Rendite',
                 color='Rendite',
-                color_continuous_scale='RdYlGn',
+                color_continuous_scale=[[0, '#f85149'], [0.5, '#d29922'], [1, '#3fb950']],
                 title='Erwartete Rendite nach Szenario'
             )
-            fig.update_layout(yaxis_tickformat='.0%')
+            fig.update_layout(
+                yaxis_tickformat='.0%',
+                font=dict(family='DM Sans, -apple-system, sans-serif', color='#e6edf3', size=13),
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                xaxis=dict(gridcolor='rgba(255,255,255,0.04)', tickfont=dict(color='#8b949e')),
+                yaxis=dict(gridcolor='rgba(255,255,255,0.04)', tickfont=dict(color='#8b949e')),
+                title_font=dict(size=16, color='#e6edf3'),
+                title_x=0,
+                hoverlabel=dict(bgcolor='#161b22', font_color='#e6edf3', bordercolor='#58a6ff'),
+            )
             st.plotly_chart(fig, use_container_width=True)
 
             # Scenario descriptions
@@ -2005,19 +2299,30 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 name='Vor Steuern',
                 x=['Durchschnitt', 'Median'],
                 y=[tax_cost_results.mean_final_before_tax, np.median(tax_cost_results.final_value_before_tax)],
-                marker_color='#2E86AB'
+                marker_color='#58a6ff',
+                marker_line_width=0,
             ))
             fig.add_trace(go.Bar(
                 name='Nach Steuern',
                 x=['Durchschnitt', 'Median'],
                 y=[tax_cost_results.mean_final_after_tax, tax_cost_results.median_final_after_tax],
-                marker_color='#A23B72'
+                marker_color='#bc8cff',
+                marker_line_width=0,
             ))
             fig.update_layout(
                 barmode='group',
                 title='Endwert-Vergleich',
                 yaxis_title='Endwert (€)',
-                height=400
+                height=400,
+                font=dict(family='DM Sans, -apple-system, sans-serif', color='#e6edf3', size=13),
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                xaxis=dict(gridcolor='rgba(255,255,255,0.04)', tickfont=dict(color='#8b949e')),
+                yaxis=dict(gridcolor='rgba(255,255,255,0.04)', tickfont=dict(color='#8b949e')),
+                title_font=dict(size=16, color='#e6edf3'),
+                title_x=0,
+                legend=dict(font=dict(color='#8b949e'), bgcolor='rgba(0,0,0,0)'),
+                hoverlabel=dict(bgcolor='#161b22', font_color='#e6edf3', bordercolor='#58a6ff'),
             )
             st.plotly_chart(fig, use_container_width=True)
 
@@ -2500,13 +2805,12 @@ else:
         """)
 
 # Footer
-st.markdown("---")
 st.markdown("""
-<div style="text-align: center; color: #666; font-size: 0.9rem;">
+<div class="app-footer">
     <p><strong>Monte Carlo Portfolio Simulation</strong></p>
     <p>Erdacht von <strong>Markus O. Thalhamer</strong>
     (<a href="mailto:mthalhamer@thalhamer.com">mthalhamer@thalhamer.com</a>)
     mit Unterstützung von <strong>Claude</strong></p>
-    <p style="font-size: 0.8rem;">Daten von Yahoo Finance | Erstellt mit Streamlit</p>
+    <p>Daten von Yahoo Finance&ensp;·&ensp;Erstellt mit Streamlit&ensp;·&ensp;Charts mit Plotly</p>
 </div>
 """, unsafe_allow_html=True)

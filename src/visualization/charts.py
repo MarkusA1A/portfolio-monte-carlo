@@ -1,5 +1,6 @@
 """
 Plotly visualizations for Monte Carlo simulation results.
+Premium theme with cohesive design system.
 """
 import numpy as np
 import pandas as pd
@@ -9,6 +10,87 @@ from plotly.subplots import make_subplots
 from typing import Optional
 
 from src.simulation.monte_carlo import SimulationResults
+
+# === CHART THEME ===
+# Cohesive color palette for all charts
+COLORS = {
+    'bg': '#0e1117',
+    'paper': '#161b22',
+    'grid': 'rgba(255,255,255,0.04)',
+    'text': '#e6edf3',
+    'text_muted': '#8b949e',
+    'accent': '#58a6ff',
+    'accent_soft': 'rgba(88,166,255,0.15)',
+    'success': '#3fb950',
+    'success_soft': 'rgba(63,185,80,0.15)',
+    'warning': '#d29922',
+    'warning_soft': 'rgba(210,153,34,0.15)',
+    'danger': '#f85149',
+    'danger_soft': 'rgba(248,81,73,0.15)',
+    'path': 'rgba(88,166,255,0.18)',
+    'path_fail': 'rgba(248,81,73,0.15)',
+    'p5': '#f85149',
+    'p25': '#d29922',
+    'p50': '#3fb950',
+    'p75': '#d29922',
+    'p95': '#f85149',
+    'cone_90': 'rgba(88,166,255,0.08)',
+    'cone_95': 'rgba(88,166,255,0.15)',
+    'cone_99': 'rgba(88,166,255,0.25)',
+    'frontier_scatter': 'Plasma',
+    'heatmap': [
+        [0.0, '#f85149'], [0.25, '#fb8b7e'], [0.5, '#1c2333'],
+        [0.75, '#6db8ff'], [1.0, '#58a6ff']
+    ],
+    'pie': ['#58a6ff', '#3fb950', '#d29922', '#f85149', '#bc8cff',
+            '#79c0ff', '#56d364', '#e3b341', '#ff7b72', '#d2a8ff',
+            '#a5d6ff', '#7ee787'],
+    'bar_primary': '#58a6ff',
+    'bar_secondary': '#8b949e',
+    'gold': '#e3b341',
+}
+
+FONT_FAMILY = 'DM Sans, -apple-system, BlinkMacSystemFont, sans-serif'
+FONT_MONO = 'JetBrains Mono, SF Mono, monospace'
+
+
+def _base_layout(**overrides) -> dict:
+    """Shared layout configuration for all charts."""
+    layout = dict(
+        font=dict(family=FONT_FAMILY, color=COLORS['text'], size=13),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        margin=dict(l=60, r=30, t=50, b=50),
+        title_font=dict(family=FONT_FAMILY, size=16, color=COLORS['text']),
+        title_x=0,
+        title_xanchor='left',
+        xaxis=dict(
+            gridcolor=COLORS['grid'],
+            zerolinecolor=COLORS['grid'],
+            title_font=dict(size=12, color=COLORS['text_muted']),
+            tickfont=dict(size=11, color=COLORS['text_muted']),
+        ),
+        yaxis=dict(
+            gridcolor=COLORS['grid'],
+            zerolinecolor=COLORS['grid'],
+            title_font=dict(size=12, color=COLORS['text_muted']),
+            tickfont=dict(size=11, color=COLORS['text_muted']),
+        ),
+        legend=dict(
+            font=dict(size=11, color=COLORS['text_muted']),
+            bgcolor='rgba(0,0,0,0)',
+            borderwidth=0,
+        ),
+        hoverlabel=dict(
+            bgcolor=COLORS['paper'],
+            font_size=12,
+            font_family=FONT_FAMILY,
+            font_color=COLORS['text'],
+            bordercolor=COLORS['accent'],
+        ),
+    )
+    layout.update(overrides)
+    return layout
 
 
 def plot_simulation_paths(
@@ -46,7 +128,7 @@ def plot_simulation_paths(
             x=days,
             y=results.portfolio_values[idx],
             mode='lines',
-            line=dict(width=0.5, color='rgba(100, 149, 237, 0.3)'),
+            line=dict(width=0.5, color=COLORS['path']),
             showlegend=False,
             hoverinfo='skip'
         ))
@@ -54,8 +136,7 @@ def plot_simulation_paths(
     # Add percentile bands
     if show_percentiles:
         percentiles = [5, 25, 50, 75, 95]
-        colors = ['rgba(255, 0, 0, 0.3)', 'rgba(255, 165, 0, 0.3)',
-                  'rgba(0, 128, 0, 1)', 'rgba(255, 165, 0, 0.3)', 'rgba(255, 0, 0, 0.3)']
+        colors = [COLORS['p5'], COLORS['p25'], COLORS['p50'], COLORS['p75'], COLORS['p95']]
 
         for p, color in zip(percentiles, colors):
             percentile_values = np.percentile(results.portfolio_values, p, axis=0)
@@ -64,17 +145,17 @@ def plot_simulation_paths(
                 y=percentile_values,
                 mode='lines',
                 name=f'{p}. Perzentil',
-                line=dict(width=2 if p == 50 else 1, color=color, dash='solid' if p == 50 else 'dash'),
+                line=dict(width=2.5 if p == 50 else 1.2, color=color, dash='solid' if p == 50 else 'dash'),
             ))
 
-    fig.update_layout(
-        title='Monte Carlo Simulation - Portfolio Entwicklung',
+    fig.update_layout(**_base_layout(
+        title='Monte Carlo Simulation – Portfolio Entwicklung',
         xaxis_title='Handelstage',
         yaxis_title='Portfolio Wert (€)',
         yaxis_tickformat=',.0f',
         hovermode='x unified',
-        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01)
-    )
+        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+    ))
 
     return fig
 
@@ -104,16 +185,18 @@ def plot_distribution(
         x=final_values,
         nbinsx=50,
         name='Verteilung',
-        marker_color='rgba(100, 149, 237, 0.7)',
-        opacity=0.7
+        marker_color=COLORS['accent'],
+        opacity=0.55
     ))
 
     # Add initial value line
     fig.add_vline(
         x=initial_value,
         line_dash="solid",
-        line_color="black",
-        annotation_text="Startwert"
+        line_color=COLORS['text_muted'],
+        line_width=1.5,
+        annotation_text="Startwert",
+        annotation_font_color=COLORS['text_muted'],
     )
 
     # Add mean line
@@ -121,8 +204,10 @@ def plot_distribution(
     fig.add_vline(
         x=mean_val,
         line_dash="dash",
-        line_color="green",
-        annotation_text=f"Mittelwert: {mean_val:,.0f}€"
+        line_color=COLORS['success'],
+        line_width=1.5,
+        annotation_text=f"Mittelwert: {mean_val:,.0f}€",
+        annotation_font_color=COLORS['success'],
     )
 
     # Add VaR line if provided
@@ -131,8 +216,10 @@ def plot_distribution(
         fig.add_vline(
             x=var_value,
             line_dash="dash",
-            line_color="red",
-            annotation_text=f"VaR 95%: {var_value:,.0f}€"
+            line_color=COLORS['danger'],
+            line_width=1.5,
+            annotation_text=f"VaR 95%: {var_value:,.0f}€",
+            annotation_font_color=COLORS['danger'],
         )
 
     # Add CVaR line if provided
@@ -141,17 +228,19 @@ def plot_distribution(
         fig.add_vline(
             x=cvar_value,
             line_dash="dot",
-            line_color="darkred",
-            annotation_text=f"CVaR 95%: {cvar_value:,.0f}€"
+            line_color='#da3633',
+            line_width=1.5,
+            annotation_text=f"CVaR 95%: {cvar_value:,.0f}€",
+            annotation_font_color='#da3633',
         )
 
-    fig.update_layout(
+    fig.update_layout(**_base_layout(
         title='Verteilung der Endwerte',
         xaxis_title='Portfolio Wert (€)',
         yaxis_title='Häufigkeit',
         xaxis_tickformat=',.0f',
-        showlegend=False
-    )
+        showlegend=False,
+    ))
 
     return fig
 
@@ -175,18 +264,10 @@ def plot_var_cone(
     days = np.arange(results.portfolio_values.shape[1])
     median = np.median(results.portfolio_values, axis=0)
 
-    # Add median line
-    fig.add_trace(go.Scatter(
-        x=days,
-        y=median,
-        mode='lines',
-        name='Median',
-        line=dict(color='green', width=2)
-    ))
+    cone_colors = [COLORS['cone_90'], COLORS['cone_95'], COLORS['cone_99']]
 
-    colors = ['rgba(255, 200, 200, 0.5)', 'rgba(255, 150, 150, 0.5)', 'rgba(255, 100, 100, 0.5)']
-
-    for conf, color in zip(confidence_levels, colors):
+    # Add confidence bands (reverse order so widest is behind)
+    for conf, color in reversed(list(zip(confidence_levels, cone_colors))):
         lower_percentile = (1 - conf) / 2 * 100
         upper_percentile = (1 + conf) / 2 * 100
 
@@ -202,13 +283,22 @@ def plot_var_cone(
             name=f'{conf:.0%} Konfidenz'
         ))
 
-    fig.update_layout(
+    # Add median line on top
+    fig.add_trace(go.Scatter(
+        x=days,
+        y=median,
+        mode='lines',
+        name='Median',
+        line=dict(color=COLORS['success'], width=2.5)
+    ))
+
+    fig.update_layout(**_base_layout(
         title='Value-at-Risk Kegel',
         xaxis_title='Handelstage',
         yaxis_title='Portfolio Wert (€)',
         yaxis_tickformat=',.0f',
-        hovermode='x unified'
-    )
+        hovermode='x unified',
+    ))
 
     return fig
 
@@ -231,19 +321,23 @@ def plot_correlation_heatmap(
         z=correlation_matrix,
         x=tickers,
         y=tickers,
-        colorscale='RdBu',
+        colorscale=COLORS['heatmap'],
         zmid=0,
         text=np.round(correlation_matrix, 2),
         texttemplate='%{text}',
-        textfont={"size": 12},
-        hoverongaps=False
+        textfont=dict(size=12, family=FONT_MONO, color=COLORS['text']),
+        hoverongaps=False,
+        colorbar=dict(
+            tickfont=dict(color=COLORS['text_muted'], size=10),
+            title=dict(text='Korrelation', font=dict(color=COLORS['text_muted'], size=11)),
+        ),
     ))
 
-    fig.update_layout(
+    fig.update_layout(**_base_layout(
         title='Asset Korrelationsmatrix',
         xaxis_title='',
         yaxis_title='',
-    )
+    ))
 
     return fig
 
@@ -268,8 +362,8 @@ def plot_return_distribution_comparison(
         x=simulation_returns,
         nbinsx=50,
         name='Simulation',
-        opacity=0.7,
-        marker_color='blue'
+        opacity=0.6,
+        marker_color=COLORS['accent']
     ))
 
     if historical_returns is not None:
@@ -277,17 +371,17 @@ def plot_return_distribution_comparison(
             x=historical_returns,
             nbinsx=50,
             name='Historisch',
-            opacity=0.7,
-            marker_color='orange'
+            opacity=0.6,
+            marker_color=COLORS['warning']
         ))
 
-    fig.update_layout(
+    fig.update_layout(**_base_layout(
         title='Renditeverteilung: Simulation vs. Historie',
         xaxis_title='Rendite',
         yaxis_title='Häufigkeit',
         barmode='overlay',
-        xaxis_tickformat='.1%'
-    )
+        xaxis_tickformat='.1%',
+    ))
 
     return fig
 
@@ -315,7 +409,8 @@ def plot_risk_metrics_summary(
         name='Portfolio',
         x=metric_names,
         y=values,
-        marker_color='steelblue'
+        marker_color=COLORS['accent'],
+        marker_line_width=0,
     ))
 
     if benchmark_metrics:
@@ -324,14 +419,15 @@ def plot_risk_metrics_summary(
             name='Benchmark',
             x=metric_names,
             y=bench_values,
-            marker_color='gray'
+            marker_color=COLORS['bar_secondary'],
+            marker_line_width=0,
         ))
 
-    fig.update_layout(
+    fig.update_layout(**_base_layout(
         title='Risiko-Metriken Übersicht',
         yaxis_title='Wert',
-        barmode='group'
-    )
+        barmode='group',
+    ))
 
     return fig
 
@@ -353,16 +449,23 @@ def plot_portfolio_weights(
     fig = go.Figure(data=[go.Pie(
         labels=tickers,
         values=weights,
-        hole=0.4,
+        hole=0.5,
         textinfo='label+percent',
-        textposition='outside'
+        textposition='outside',
+        textfont=dict(family=FONT_FAMILY, size=12, color=COLORS['text']),
+        marker=dict(
+            colors=COLORS['pie'][:len(tickers)],
+            line=dict(color=COLORS['paper'], width=2),
+        ),
+        pull=[0.02] * len(tickers),
     )])
 
-    fig.update_layout(
+    fig.update_layout(**_base_layout(
         title='Portfolio Allokation',
         showlegend=True,
-        legend=dict(yanchor="top", y=0.99, xanchor="left", x=1.02)
-    )
+        legend=dict(yanchor="top", y=0.99, xanchor="left", x=1.02),
+        margin=dict(l=20, r=20, t=50, b=20),
+    ))
 
     return fig
 
@@ -391,17 +494,17 @@ def plot_drawdown(
         x=days,
         y=drawdown * 100,
         fill='tozeroy',
-        fillcolor='rgba(255, 0, 0, 0.3)',
-        line=dict(color='red'),
+        fillcolor=COLORS['danger_soft'],
+        line=dict(color=COLORS['danger'], width=1.5),
         name='Drawdown'
     ))
 
-    fig.update_layout(
+    fig.update_layout(**_base_layout(
         title='Drawdown über Zeit',
         xaxis_title='Handelstage',
         yaxis_title='Drawdown (%)',
-        yaxis_ticksuffix='%'
-    )
+        yaxis_ticksuffix='%',
+    ))
 
     return fig
 
@@ -427,23 +530,29 @@ def plot_scenario_comparison(
         final_std = results.std_final_value
         return_pct = (final_mean - initial_value) / initial_value * 100
 
+        bar_color = COLORS['success'] if return_pct > 0 else COLORS['danger']
+
         fig.add_trace(go.Bar(
             name=name,
             x=[name],
             y=[return_pct],
+            marker_color=bar_color,
+            marker_line_width=0,
             error_y=dict(
                 type='data',
                 array=[final_std / initial_value * 100],
-                visible=True
+                visible=True,
+                color=COLORS['text_muted'],
+                thickness=1.5,
             )
         ))
 
-    fig.update_layout(
+    fig.update_layout(**_base_layout(
         title='Szenario-Vergleich: Erwartete Rendite',
         yaxis_title='Rendite (%)',
         yaxis_ticksuffix='%',
-        showlegend=False
-    )
+        showlegend=False,
+    ))
 
     return fig
 
@@ -478,9 +587,12 @@ def plot_efficient_frontier(
         marker=dict(
             size=5,
             color=frontier_result.all_portfolios_sharpe,
-            colorscale='Viridis',
-            colorbar=dict(title='Sharpe Ratio'),
-            opacity=0.5
+            colorscale=COLORS['frontier_scatter'],
+            colorbar=dict(
+                title=dict(text='Sharpe Ratio', font=dict(color=COLORS['text_muted'], size=11)),
+                tickfont=dict(color=COLORS['text_muted'], size=10),
+            ),
+            opacity=0.45,
         ),
         name='Zufällige Portfolios',
         hovertemplate='Volatilität: %{x:.1f}%<br>Rendite: %{y:.1f}%<extra></extra>'
@@ -491,7 +603,7 @@ def plot_efficient_frontier(
         x=frontier_result.frontier_volatilities * 100,
         y=frontier_result.frontier_returns * 100,
         mode='lines',
-        line=dict(color='red', width=3),
+        line=dict(color=COLORS['accent'], width=3),
         name='Efficient Frontier',
         hovertemplate='Volatilität: %{x:.1f}%<br>Rendite: %{y:.1f}%<extra></extra>'
     ))
@@ -502,7 +614,7 @@ def plot_efficient_frontier(
         x=[max_sharpe.volatility * 100],
         y=[max_sharpe.expected_return * 100],
         mode='markers',
-        marker=dict(size=20, color='gold', symbol='star', line=dict(width=2, color='black')),
+        marker=dict(size=18, color=COLORS['gold'], symbol='star', line=dict(width=2, color=COLORS['paper'])),
         name=f'Max Sharpe ({max_sharpe.sharpe_ratio:.2f})',
         hovertemplate=f'<b>Maximale Sharpe Ratio</b><br>Volatilität: {max_sharpe.volatility*100:.1f}%<br>Rendite: {max_sharpe.expected_return*100:.1f}%<br>Sharpe: {max_sharpe.sharpe_ratio:.2f}<extra></extra>'
     ))
@@ -513,7 +625,7 @@ def plot_efficient_frontier(
         x=[min_vol.volatility * 100],
         y=[min_vol.expected_return * 100],
         mode='markers',
-        marker=dict(size=15, color='blue', symbol='diamond', line=dict(width=2, color='white')),
+        marker=dict(size=14, color=COLORS['accent'], symbol='diamond', line=dict(width=2, color=COLORS['paper'])),
         name=f'Min Volatilität ({min_vol.volatility*100:.1f}%)',
         hovertemplate=f'<b>Minimale Volatilität</b><br>Volatilität: {min_vol.volatility*100:.1f}%<br>Rendite: {min_vol.expected_return*100:.1f}%<br>Sharpe: {min_vol.sharpe_ratio:.2f}<extra></extra>'
     ))
@@ -524,20 +636,20 @@ def plot_efficient_frontier(
             x=[current_volatility * 100],
             y=[current_return * 100],
             mode='markers',
-            marker=dict(size=15, color='red', symbol='circle', line=dict(width=2, color='white')),
+            marker=dict(size=14, color=COLORS['danger'], symbol='circle', line=dict(width=2, color=COLORS['paper'])),
             name='Aktuelles Portfolio',
             hovertemplate=f'<b>Aktuelles Portfolio</b><br>Volatilität: {current_volatility*100:.1f}%<br>Rendite: {current_return*100:.1f}%<extra></extra>'
         ))
 
-    fig.update_layout(
-        title='Efficient Frontier - Rendite vs. Risiko',
+    fig.update_layout(**_base_layout(
+        title='Efficient Frontier – Rendite vs. Risiko',
         xaxis_title='Volatilität (Risiko) %',
         yaxis_title='Erwartete Rendite %',
         xaxis_ticksuffix='%',
         yaxis_ticksuffix='%',
         hovermode='closest',
-        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01)
-    )
+        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+    ))
 
     return fig
 
@@ -571,7 +683,7 @@ def plot_withdrawal_simulation(
     )
 
     for idx in sample_indices:
-        color = 'rgba(100, 149, 237, 0.2)' if results.portfolio_paths[idx, -1] > 0 else 'rgba(255, 100, 100, 0.2)'
+        color = COLORS['path'] if results.portfolio_paths[idx, -1] > 0 else COLORS['path_fail']
         fig.add_trace(go.Scatter(
             x=years,
             y=results.portfolio_paths[idx],
@@ -584,8 +696,7 @@ def plot_withdrawal_simulation(
     # Add percentile bands
     if show_percentiles:
         percentiles = [5, 25, 50, 75, 95]
-        colors = ['rgba(255, 0, 0, 0.8)', 'rgba(255, 165, 0, 0.8)',
-                  'rgba(0, 128, 0, 1)', 'rgba(255, 165, 0, 0.8)', 'rgba(255, 0, 0, 0.8)']
+        colors = [COLORS['p5'], COLORS['p25'], COLORS['p50'], COLORS['p75'], COLORS['p95']]
 
         for p, color in zip(percentiles, colors):
             percentile_values = np.percentile(results.portfolio_paths, p, axis=0)
@@ -594,20 +705,22 @@ def plot_withdrawal_simulation(
                 y=percentile_values,
                 mode='lines',
                 name=f'{p}. Perzentil',
-                line=dict(width=2 if p == 50 else 1, color=color, dash='solid' if p == 50 else 'dash'),
+                line=dict(width=2.5 if p == 50 else 1.2, color=color, dash='solid' if p == 50 else 'dash'),
             ))
 
     # Add zero line
-    fig.add_hline(y=0, line_dash="dash", line_color="black", annotation_text="Vermögen erschöpft")
+    fig.add_hline(y=0, line_dash="dash", line_color=COLORS['text_muted'],
+                  line_width=1, annotation_text="Vermögen erschöpft",
+                  annotation_font_color=COLORS['text_muted'])
 
-    fig.update_layout(
-        title='Entnahme-Simulation - Vermögensentwicklung',
+    fig.update_layout(**_base_layout(
+        title='Entnahme-Simulation – Vermögensentwicklung',
         xaxis_title='Jahre',
         yaxis_title='Portfolio Wert (€)',
         yaxis_tickformat=',.0f',
         hovermode='x unified',
-        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01)
-    )
+        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+    ))
 
     return fig
 
@@ -634,8 +747,8 @@ def plot_depletion_histogram(
             x=depletion_times_years,
             nbinsx=30,
             name='Erschöpfungszeit',
-            marker_color='rgba(255, 100, 100, 0.7)',
-            opacity=0.7
+            marker_color=COLORS['danger'],
+            opacity=0.55,
         ))
 
         # Add median line if available
@@ -644,16 +757,18 @@ def plot_depletion_histogram(
             fig.add_vline(
                 x=median_years,
                 line_dash="dash",
-                line_color="red",
-                annotation_text=f"Median: {median_years:.1f} Jahre"
+                line_color=COLORS['warning'],
+                line_width=1.5,
+                annotation_text=f"Median: {median_years:.1f} Jahre",
+                annotation_font_color=COLORS['warning'],
             )
 
-    fig.update_layout(
+    fig.update_layout(**_base_layout(
         title=f'Verteilung der Erschöpfungszeiten (Misserfolgsrate: {results.failure_rate*100:.1f}%)',
         xaxis_title='Jahre bis zur Erschöpfung',
         yaxis_title='Häufigkeit',
-        showlegend=False
-    )
+        showlegend=False,
+    ))
 
     return fig
 
@@ -670,22 +785,29 @@ def plot_success_rate_gauge(
     Returns:
         Plotly figure
     """
+    bar_color = COLORS['success'] if success_rate >= 0.9 else COLORS['warning'] if success_rate >= 0.7 else COLORS['danger']
+
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=success_rate * 100,
         domain={'x': [0, 1], 'y': [0, 1]},
-        title={'text': "Erfolgsquote"},
-        number={'suffix': '%'},
+        title={'text': "Erfolgsquote", 'font': dict(family=FONT_FAMILY, size=16, color=COLORS['text'])},
+        number={'suffix': '%', 'font': dict(family=FONT_MONO, size=36, color=COLORS['text'])},
         gauge={
-            'axis': {'range': [0, 100]},
-            'bar': {'color': "darkgreen" if success_rate >= 0.9 else "orange" if success_rate >= 0.7 else "red"},
+            'axis': {
+                'range': [0, 100],
+                'tickfont': dict(color=COLORS['text_muted'], size=10),
+            },
+            'bar': {'color': bar_color, 'thickness': 0.8},
+            'bgcolor': COLORS['paper'],
+            'borderwidth': 0,
             'steps': [
-                {'range': [0, 70], 'color': 'rgba(255, 100, 100, 0.3)'},
-                {'range': [70, 90], 'color': 'rgba(255, 200, 100, 0.3)'},
-                {'range': [90, 100], 'color': 'rgba(100, 200, 100, 0.3)'}
+                {'range': [0, 70], 'color': COLORS['danger_soft']},
+                {'range': [70, 90], 'color': COLORS['warning_soft']},
+                {'range': [90, 100], 'color': COLORS['success_soft']}
             ],
             'threshold': {
-                'line': {'color': "black", 'width': 4},
+                'line': {'color': COLORS['text_muted'], 'width': 2},
                 'thickness': 0.75,
                 'value': 95
             }
@@ -693,7 +815,11 @@ def plot_success_rate_gauge(
     ))
 
     fig.update_layout(
-        height=300
+        height=300,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(family=FONT_FAMILY, color=COLORS['text']),
+        margin=dict(l=30, r=30, t=50, b=20),
     )
 
     return fig
@@ -720,24 +846,26 @@ def plot_optimal_weights(
     filtered_weights = weights[non_zero_mask]
     filtered_tickers = [t for t, m in zip(ticker_symbols, non_zero_mask) if m]
 
-    colors = px.colors.qualitative.Set2[:len(filtered_tickers)]
+    colors = COLORS['pie'][:len(filtered_tickers)]
 
     fig = go.Figure(data=[
         go.Bar(
             x=filtered_tickers,
             y=filtered_weights * 100,
             marker_color=colors,
+            marker_line_width=0,
             text=[f'{w*100:.1f}%' for w in filtered_weights],
-            textposition='auto'
+            textposition='auto',
+            textfont=dict(family=FONT_MONO, size=12, color=COLORS['text']),
         )
     ])
 
-    fig.update_layout(
+    fig.update_layout(**_base_layout(
         title=title,
         xaxis_title='Asset',
         yaxis_title='Gewichtung (%)',
         yaxis_ticksuffix='%',
-        showlegend=False
-    )
+        showlegend=False,
+    ))
 
     return fig
