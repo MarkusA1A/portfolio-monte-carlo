@@ -180,47 +180,58 @@ st.set_page_config(
     initial_sidebar_state="collapsed"  # Collapsed on mobile for better UX
 )
 
-# Custom CSS for modern design + responsive layout (Mobile: iPhone, iPad)
+# Custom CSS — Finexa-inspired dark fintech theme + responsive layout
 st.markdown("""
 <style>
-    /* === GOOGLE FONTS === */
-    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap');
+    /* === FONTS === */
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
-    /* === CSS VARIABLES (Design Tokens) === */
+    /* === DESIGN TOKENS === */
     :root {
-        --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-        --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
-        --color-bg: #0e1117;
-        --color-surface: #161b22;
-        --color-surface-raised: #1c2333;
+        --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+        --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+        --font-mono: 'IBM Plex Mono', 'SF Mono', 'Consolas', monospace;
+        --color-bg: #141414;
+        --color-surface: #1a1a1a;
+        --color-surface-raised: #222222;
+        --color-surface-hover: #2a2a2a;
         --color-border: rgba(255, 255, 255, 0.06);
         --color-border-hover: rgba(255, 255, 255, 0.12);
-        --color-text: #e6edf3;
-        --color-text-muted: #8b949e;
-        --color-text-subtle: #6e7681;
-        --color-accent: #58a6ff;
-        --color-accent-soft: rgba(88, 166, 255, 0.12);
-        --color-success: #3fb950;
-        --color-success-soft: rgba(63, 185, 80, 0.12);
-        --color-warning: #d29922;
-        --color-warning-soft: rgba(210, 153, 34, 0.12);
-        --color-danger: #f85149;
-        --color-danger-soft: rgba(248, 81, 73, 0.12);
-        --radius-sm: 6px;
-        --radius-md: 10px;
-        --radius-lg: 14px;
-        --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
-        --shadow-md: 0 4px 12px rgba(0,0,0,0.25);
-        --shadow-lg: 0 8px 24px rgba(0,0,0,0.3);
+        --color-text: #f0f0f0;
+        --color-text-secondary: #999999;
+        --color-text-muted: #666666;
+        --color-accent: #D5FF61;
+        --color-accent-dim: #b8e04e;
+        --color-accent-soft: rgba(213, 255, 97, 0.10);
+        --color-accent-glow: rgba(213, 255, 97, 0.06);
+        --color-success: #4ade80;
+        --color-success-soft: rgba(74, 222, 128, 0.10);
+        --color-warning: #fbbf24;
+        --color-warning-soft: rgba(251, 191, 36, 0.10);
+        --color-danger: #f87171;
+        --color-danger-soft: rgba(248, 113, 113, 0.10);
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 16px;
+        --radius-xl: 20px;
         --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     /* === GLOBAL TYPOGRAPHY === */
     html, body, [class*="css"] {
         font-family: var(--font-sans) !important;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
     }
-    h1, h2, h3, h4, h5, h6,
-    [data-testid="stMarkdownContainer"] h1,
+
+    /* Serif display headings */
+    h1,
+    [data-testid="stMarkdownContainer"] h1 {
+        font-family: var(--font-display) !important;
+        font-weight: 600 !important;
+        letter-spacing: -0.01em;
+    }
+    h2, h3, h4, h5, h6,
     [data-testid="stMarkdownContainer"] h2,
     [data-testid="stMarkdownContainer"] h3 {
         font-family: var(--font-sans) !important;
@@ -232,89 +243,107 @@ st.markdown("""
         font-family: var(--font-mono) !important;
     }
 
+    /* === STREAMLIT OVERRIDES — BACKGROUND === */
+    .stApp, [data-testid="stAppViewContainer"],
+    .main, section[data-testid="stSidebar"] {
+        background-color: var(--color-bg) !important;
+    }
+    header[data-testid="stHeader"] {
+        background: var(--color-bg) !important;
+    }
+
     /* === MAIN LAYOUT === */
     .main .block-container {
         max-width: 1200px;
-        padding-top: 2rem !important;
+        padding-top: 2.5rem !important;
     }
 
     /* === HEADER STYLING === */
     h1 {
-        font-size: 2rem !important;
-        font-weight: 700 !important;
-        letter-spacing: -0.03em;
-        line-height: 1.2 !important;
-        margin-bottom: 0.25rem !important;
+        font-size: 2.2rem !important;
+        font-weight: 600 !important;
+        line-height: 1.15 !important;
+        margin-bottom: 0.2rem !important;
+        color: var(--color-text) !important;
     }
     h2 {
-        font-size: 1.35rem !important;
+        font-size: 1.3rem !important;
         font-weight: 600 !important;
-        letter-spacing: -0.02em;
-        margin-top: 1.5rem !important;
-        margin-bottom: 0.75rem !important;
+        margin-top: 1.75rem !important;
+        margin-bottom: 0.6rem !important;
+        color: var(--color-text) !important;
     }
     h3 {
-        font-size: 1.1rem !important;
-        font-weight: 600 !important;
-        letter-spacing: -0.01em;
+        font-size: 1.05rem !important;
+        font-weight: 500 !important;
+        color: var(--color-text-secondary) !important;
     }
 
-    /* === METRIC CARDS === */
+    /* === METRIC CARDS (Finexa style: dark panel, no heavy border) === */
     [data-testid="stMetric"] {
         background: var(--color-surface-raised);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
-        padding: 1rem 1.1rem !important;
-        transition: border-color var(--transition), box-shadow var(--transition);
+        padding: 1.1rem 1.2rem !important;
+        transition: background var(--transition);
     }
     [data-testid="stMetric"]:hover {
-        border-color: var(--color-border-hover);
-        box-shadow: var(--shadow-sm);
+        background: var(--color-surface-hover);
     }
     [data-testid="stMetricValue"] {
         font-family: var(--font-mono) !important;
-        font-size: clamp(1.05rem, 2.5vw, 1.45rem);
+        font-size: clamp(1.1rem, 2.5vw, 1.5rem);
         font-weight: 500;
-        letter-spacing: -0.01em;
+        letter-spacing: -0.02em;
+        color: var(--color-text) !important;
     }
     [data-testid="stMetricLabel"] {
         font-family: var(--font-sans) !important;
-        font-size: clamp(0.72rem, 1.5vw, 0.88rem);
+        font-size: clamp(0.68rem, 1.5vw, 0.82rem);
         font-weight: 500;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.06em;
         color: var(--color-text-muted) !important;
     }
     [data-testid="stMetricDelta"] {
         font-family: var(--font-mono) !important;
-        font-size: 0.82rem;
+        font-size: 0.8rem;
+    }
+    /* Positive delta in lime */
+    [data-testid="stMetricDelta"] svg[data-testid="stMetricDeltaIcon-Up"] + div,
+    [data-testid="stMetricDelta"][style*="color: rgb(9, 171, 59)"],
+    [data-testid="stMetricDelta"][data-testid-delta-type="positive"] {
+        color: var(--color-accent) !important;
     }
 
-    /* === TABS === */
+    /* === TABS (Finexa: pill-style, lime active) === */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 0;
-        border-bottom: 1px solid var(--color-border);
-        background: transparent;
+        gap: 0.25rem;
+        border-bottom: none;
+        background: var(--color-surface);
+        border-radius: var(--radius-md);
+        padding: 0.3rem;
     }
     .stTabs [data-baseweb="tab"] {
         font-family: var(--font-sans) !important;
         font-weight: 500;
-        font-size: 0.88rem;
-        letter-spacing: 0;
-        padding: 0.7rem 1.1rem;
-        border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-        border-bottom: 2px solid transparent;
+        font-size: 0.85rem;
+        padding: 0.55rem 1rem;
+        border-radius: var(--radius-sm);
+        border-bottom: none;
         transition: all var(--transition);
-        color: var(--color-text-muted);
+        color: var(--color-text-secondary);
+        background: transparent;
     }
     .stTabs [data-baseweb="tab"]:hover {
         color: var(--color-text);
-        background: var(--color-accent-soft);
+        background: var(--color-surface-raised);
     }
     .stTabs [data-baseweb="tab"][aria-selected="true"] {
-        color: var(--color-accent) !important;
-        border-bottom-color: var(--color-accent) !important;
+        color: #141414 !important;
+        background: var(--color-accent) !important;
         font-weight: 600;
+        border-bottom: none !important;
     }
 
     /* === SIDEBAR === */
@@ -325,45 +354,53 @@ st.markdown("""
     [data-testid="stSidebar"] h1,
     [data-testid="stSidebar"] h2,
     [data-testid="stSidebar"] h3 {
-        font-size: 1rem !important;
+        font-family: var(--font-sans) !important;
+        font-size: 0.78rem !important;
         font-weight: 600 !important;
         text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: var(--color-text-muted);
-        margin-top: 1.25rem !important;
+        letter-spacing: 0.08em;
+        color: var(--color-text-muted) !important;
+        margin-top: 1.5rem !important;
         margin-bottom: 0.5rem !important;
     }
-    [data-testid="stSidebar"] .stSubheader {
-        border-bottom: 1px solid var(--color-border);
-        padding-bottom: 0.4rem;
-    }
 
-    /* === BUTTONS === */
+    /* === BUTTONS (Finexa: lime primary, dark text) === */
     .stButton button[kind="primary"],
     .stFormSubmitButton button {
         font-family: var(--font-sans) !important;
         font-weight: 600 !important;
-        font-size: 0.92rem !important;
+        font-size: 0.9rem !important;
         letter-spacing: 0.01em;
         border-radius: var(--radius-md) !important;
         padding: 0.7rem 1.5rem !important;
+        background: var(--color-accent) !important;
+        color: #141414 !important;
+        border: none !important;
         transition: all var(--transition);
-        box-shadow: var(--shadow-sm);
     }
     .stButton button[kind="primary"]:hover,
     .stFormSubmitButton button:hover {
-        box-shadow: var(--shadow-md);
+        background: var(--color-accent-dim) !important;
         transform: translateY(-1px);
+        box-shadow: 0 4px 20px rgba(213, 255, 97, 0.15);
     }
     .stButton button:not([kind="primary"]),
     .stDownloadButton button {
         font-family: var(--font-sans) !important;
         font-weight: 500 !important;
         border-radius: var(--radius-md) !important;
+        border: 1px solid var(--color-border) !important;
+        background: var(--color-surface-raised) !important;
+        color: var(--color-text) !important;
         transition: all var(--transition);
     }
+    .stButton button:not([kind="primary"]):hover,
+    .stDownloadButton button:hover {
+        background: var(--color-surface-hover) !important;
+        border-color: var(--color-border-hover) !important;
+    }
 
-    /* === INPUTS === */
+    /* === INPUTS (Finexa: clean, subtle) === */
     .stTextInput input,
     .stNumberInput input,
     .stSelectbox [data-baseweb="select"],
@@ -371,21 +408,27 @@ st.markdown("""
         font-family: var(--font-sans) !important;
         border-radius: var(--radius-sm) !important;
         border: 1px solid var(--color-border) !important;
+        background: var(--color-surface) !important;
         transition: border-color var(--transition), box-shadow var(--transition);
     }
     .stTextInput input:focus,
     .stNumberInput input:focus {
         border-color: var(--color-accent) !important;
-        box-shadow: 0 0 0 3px var(--color-accent-soft) !important;
+        box-shadow: 0 0 0 2px var(--color-accent-soft) !important;
     }
     .stTextInput label,
     .stNumberInput label,
     .stSelectbox label,
     .stSlider label {
         font-family: var(--font-sans) !important;
-        font-size: 0.85rem !important;
+        font-size: 0.82rem !important;
         font-weight: 500;
-        color: var(--color-text-muted);
+        color: var(--color-text-secondary) !important;
+    }
+
+    /* === SLIDER (lime accent) === */
+    .stSlider [data-baseweb="slider"] [role="slider"] {
+        background: var(--color-accent) !important;
     }
 
     /* === DATAFRAMES === */
@@ -400,57 +443,57 @@ st.markdown("""
         width: 100% !important;
     }
     .stPlotlyChart {
+        background: var(--color-surface);
         border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
+        border-radius: var(--radius-lg);
         overflow: hidden;
-        padding: 0.25rem;
+        padding: 0.5rem;
     }
 
     /* === EXPANDERS === */
     .streamlit-expanderHeader {
         font-family: var(--font-sans) !important;
         font-weight: 500 !important;
-        font-size: 0.92rem !important;
+        font-size: 0.9rem !important;
         border-radius: var(--radius-sm);
         transition: background var(--transition);
     }
-    details[open] .streamlit-expanderHeader {
-        border-bottom: 1px solid var(--color-border);
-    }
 
-    /* === ALERTS (st.info, st.warning, etc.) === */
+    /* === ALERTS === */
     .stAlert {
         border-radius: var(--radius-md) !important;
         font-family: var(--font-sans) !important;
-        font-size: 0.88rem;
+        font-size: 0.86rem;
         border-left-width: 3px !important;
+        background: var(--color-surface) !important;
     }
 
     /* === DIVIDERS === */
     hr {
         border: none;
         border-top: 1px solid var(--color-border);
-        margin: 1.5rem 0;
+        margin: 2rem 0;
     }
 
-    /* === PROGRESS BAR === */
+    /* === PROGRESS BAR (lime) === */
     .stProgress > div > div {
         border-radius: 100px;
-        height: 6px;
+        height: 5px;
+        background: var(--color-accent) !important;
     }
 
-    /* === CUSTOM FOOTER CLASS === */
+    /* === CUSTOM CLASSES === */
     .app-footer {
         text-align: center;
-        padding: 2rem 0 1rem;
+        padding: 2.5rem 0 1.5rem;
         border-top: 1px solid var(--color-border);
-        margin-top: 3rem;
+        margin-top: 4rem;
     }
     .app-footer p {
-        color: var(--color-text-subtle);
-        font-size: 0.82rem;
-        line-height: 1.6;
-        margin: 0.2rem 0;
+        color: var(--color-text-muted);
+        font-size: 0.78rem;
+        line-height: 1.7;
+        margin: 0.15rem 0;
     }
     .app-footer a {
         color: var(--color-accent);
@@ -459,29 +502,24 @@ st.markdown("""
     .app-footer a:hover {
         text-decoration: underline;
     }
+    .app-footer strong {
+        color: var(--color-text-secondary);
+    }
 
-    /* === CUSTOM HEADER BADGE === */
     .app-badge {
         display: inline-block;
         font-family: var(--font-mono);
-        font-size: 0.72rem;
+        font-size: 0.62rem;
         font-weight: 500;
-        padding: 0.2rem 0.6rem;
+        padding: 0.2rem 0.55rem;
         border-radius: 100px;
-        background: var(--color-accent-soft);
-        color: var(--color-accent);
-        letter-spacing: 0.02em;
-        margin-left: 0.5rem;
+        background: var(--color-accent);
+        color: #141414;
+        letter-spacing: 0.03em;
+        margin-left: 0.6rem;
         vertical-align: middle;
-    }
-
-    /* === SECTION CARDS === */
-    .section-card {
-        background: var(--color-surface-raised);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        margin-bottom: 1rem;
+        position: relative;
+        top: -2px;
     }
 
     /* === MOBILE STYLES (iPhone) === */
@@ -503,8 +541,8 @@ st.markdown("""
             overflow-x: auto;
             overflow-y: hidden;
             flex-wrap: nowrap !important;
-            gap: 0;
-            padding-bottom: 0.5rem;
+            gap: 0.15rem;
+            padding: 0.25rem;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
         }
@@ -512,8 +550,8 @@ st.markdown("""
             display: none;
         }
         .stTabs [data-baseweb="tab"] {
-            font-size: 0.75rem;
-            padding: 0.5rem 0.6rem;
+            font-size: 0.72rem;
+            padding: 0.45rem 0.55rem;
             white-space: nowrap;
             flex-shrink: 0;
         }
@@ -523,9 +561,9 @@ st.markdown("""
             flex: 1 1 100% !important;
         }
 
-        h1 { font-size: 1.4rem !important; margin-bottom: 0.5rem !important; }
+        h1 { font-size: 1.5rem !important; margin-bottom: 0.5rem !important; }
         h2 { font-size: 1.15rem !important; margin-top: 1rem !important; }
-        h3 { font-size: 1rem !important; }
+        h3 { font-size: 0.95rem !important; }
 
         [data-testid="stMetric"] {
             padding: 0.75rem 0.85rem !important;
@@ -535,7 +573,7 @@ st.markdown("""
             line-height: 1.2;
         }
         [data-testid="stMetricLabel"] {
-            font-size: 0.7rem !important;
+            font-size: 0.65rem !important;
         }
         [data-testid="stMetricDelta"] {
             font-size: 0.7rem !important;
@@ -571,8 +609,9 @@ st.markdown("""
 
         .stPlotlyChart {
             margin: 0 -0.5rem;
-            border: none;
             border-radius: 0;
+            border-left: none;
+            border-right: none;
         }
 
         .stDataFrame {
@@ -609,15 +648,15 @@ st.markdown("""
         }
     }
 
-    /* === SMALL MOBILE (iPhone SE, etc.) === */
+    /* === SMALL MOBILE (iPhone SE) === */
     @media (max-width: 375px) {
         .main .block-container {
             padding: 0.5rem 0.5rem 5rem 0.5rem !important;
         }
-        h1 { font-size: 1.2rem !important; }
+        h1 { font-size: 1.25rem !important; }
         h2 { font-size: 1rem !important; }
         .stTabs [data-baseweb="tab"] {
-            font-size: 0.7rem;
+            font-size: 0.68rem;
             padding: 0.4rem 0.5rem;
         }
         [data-testid="stMetricValue"] {
@@ -625,17 +664,17 @@ st.markdown("""
         }
     }
 
-    /* === TABLET STYLES (iPad) === */
+    /* === TABLET (iPad) === */
     @media (min-width: 769px) and (max-width: 1024px) {
         [data-testid="stSidebar"] {
             min-width: 300px;
         }
         .stTabs [data-baseweb="tab"] {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
     }
 
-    /* === TOUCH DEVICE IMPROVEMENTS === */
+    /* === TOUCH DEVICES === */
     @media (hover: none) and (pointer: coarse) {
         .stSlider [data-baseweb="slider"] {
             min-height: 44px;
@@ -657,13 +696,6 @@ st.markdown("""
         }
         button, a {
             touch-action: manipulation;
-        }
-    }
-
-    /* === DARK MODE ADJUSTMENTS === */
-    @media (prefers-color-scheme: dark) {
-        .stAlert {
-            border-radius: var(--radius-md);
         }
     }
 </style>
@@ -1527,7 +1559,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                     x=list(range(savings_results.time_horizon + 1)),
                     y=savings_results.portfolio_values[i],
                     mode='lines',
-                    line=dict(width=0.5, color='rgba(88,166,255,0.18)'),
+                    line=dict(width=0.5, color='rgba(213,255,97,0.12)'),
                     showlegend=False
                 ))
 
@@ -1537,7 +1569,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 y=savings_results.total_contributions,
                 mode='lines',
                 name='Einzahlungen',
-                line=dict(width=2, color='#f85149', dash='dash')
+                line=dict(width=2, color='#f87171', dash='dash')
             ))
 
             # Median line
@@ -1547,7 +1579,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 y=median_values,
                 mode='lines',
                 name='Median',
-                line=dict(width=2.5, color='#3fb950')
+                line=dict(width=2.5, color='#D5FF61')
             ))
 
             fig.update_layout(
@@ -1555,15 +1587,15 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 xaxis_title='Monate',
                 yaxis_title='Portfolio Wert (€)',
                 yaxis_tickformat=',.0f',
-                font=dict(family='DM Sans, -apple-system, sans-serif', color='#e6edf3', size=13),
+                font=dict(family='Outfit, -apple-system, sans-serif', color='#f0f0f0', size=13),
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)',
-                xaxis=dict(gridcolor='rgba(255,255,255,0.04)', tickfont=dict(color='#8b949e')),
-                yaxis=dict(gridcolor='rgba(255,255,255,0.04)', tickfont=dict(color='#8b949e')),
-                title_font=dict(size=16, color='#e6edf3'),
+                xaxis=dict(gridcolor='rgba(255,255,255,0.04)', tickfont=dict(color='#666666')),
+                yaxis=dict(gridcolor='rgba(255,255,255,0.04)', tickfont=dict(color='#666666')),
+                title_font=dict(size=15, color='#f0f0f0'),
                 title_x=0,
-                legend=dict(font=dict(color='#8b949e'), bgcolor='rgba(0,0,0,0)'),
-                hoverlabel=dict(bgcolor='#161b22', font_color='#e6edf3', bordercolor='#58a6ff'),
+                legend=dict(font=dict(color='#999999'), bgcolor='rgba(0,0,0,0)'),
+                hoverlabel=dict(bgcolor='#222222', font_color='#f0f0f0', bordercolor='#D5FF61'),
             )
 
             st.plotly_chart(fig, use_container_width=True)
@@ -2085,19 +2117,19 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 x='Szenario',
                 y='Rendite',
                 color='Rendite',
-                color_continuous_scale=[[0, '#f85149'], [0.5, '#d29922'], [1, '#3fb950']],
+                color_continuous_scale=[[0, '#ef6461'], [0.5, '#e0a83a'], [1, '#D5FF61']],
                 title='Erwartete Rendite nach Szenario'
             )
             fig.update_layout(
                 yaxis_tickformat='.0%',
-                font=dict(family='DM Sans, -apple-system, sans-serif', color='#e6edf3', size=13),
+                font=dict(family='Outfit, -apple-system, sans-serif', color='#f0f0f0', size=13),
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)',
-                xaxis=dict(gridcolor='rgba(255,255,255,0.04)', tickfont=dict(color='#8b949e')),
-                yaxis=dict(gridcolor='rgba(255,255,255,0.04)', tickfont=dict(color='#8b949e')),
-                title_font=dict(size=16, color='#e6edf3'),
+                xaxis=dict(gridcolor='rgba(255,255,255,0.05)', tickfont=dict(color='#888888')),
+                yaxis=dict(gridcolor='rgba(255,255,255,0.05)', tickfont=dict(color='#888888')),
+                title_font=dict(size=16, color='#f0f0f0'),
                 title_x=0,
-                hoverlabel=dict(bgcolor='#161b22', font_color='#e6edf3', bordercolor='#58a6ff'),
+                hoverlabel=dict(bgcolor='#222222', font_color='#f0f0f0', bordercolor='#D5FF61'),
             )
             st.plotly_chart(fig, use_container_width=True)
 
@@ -2299,14 +2331,14 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 name='Vor Steuern',
                 x=['Durchschnitt', 'Median'],
                 y=[tax_cost_results.mean_final_before_tax, np.median(tax_cost_results.final_value_before_tax)],
-                marker_color='#58a6ff',
+                marker_color='#D5FF61',
                 marker_line_width=0,
             ))
             fig.add_trace(go.Bar(
                 name='Nach Steuern',
                 x=['Durchschnitt', 'Median'],
                 y=[tax_cost_results.mean_final_after_tax, tax_cost_results.median_final_after_tax],
-                marker_color='#bc8cff',
+                marker_color='#b59cff',
                 marker_line_width=0,
             ))
             fig.update_layout(
@@ -2314,15 +2346,15 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 title='Endwert-Vergleich',
                 yaxis_title='Endwert (€)',
                 height=400,
-                font=dict(family='DM Sans, -apple-system, sans-serif', color='#e6edf3', size=13),
+                font=dict(family='Outfit, -apple-system, sans-serif', color='#f0f0f0', size=13),
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)',
-                xaxis=dict(gridcolor='rgba(255,255,255,0.04)', tickfont=dict(color='#8b949e')),
-                yaxis=dict(gridcolor='rgba(255,255,255,0.04)', tickfont=dict(color='#8b949e')),
-                title_font=dict(size=16, color='#e6edf3'),
+                xaxis=dict(gridcolor='rgba(255,255,255,0.05)', tickfont=dict(color='#888888')),
+                yaxis=dict(gridcolor='rgba(255,255,255,0.05)', tickfont=dict(color='#888888')),
+                title_font=dict(size=16, color='#f0f0f0'),
                 title_x=0,
-                legend=dict(font=dict(color='#8b949e'), bgcolor='rgba(0,0,0,0)'),
-                hoverlabel=dict(bgcolor='#161b22', font_color='#e6edf3', bordercolor='#58a6ff'),
+                legend=dict(font=dict(color='#888888'), bgcolor='rgba(0,0,0,0)'),
+                hoverlabel=dict(bgcolor='#222222', font_color='#f0f0f0', bordercolor='#D5FF61'),
             )
             st.plotly_chart(fig, use_container_width=True)
 

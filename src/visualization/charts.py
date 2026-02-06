@@ -11,47 +11,47 @@ from typing import Optional
 
 from src.simulation.monte_carlo import SimulationResults
 
-# === CHART THEME ===
+# === CHART THEME – Finexa-inspired dark + lime ===
 # Cohesive color palette for all charts
 COLORS = {
-    'bg': '#0e1117',
-    'paper': '#161b22',
-    'grid': 'rgba(255,255,255,0.04)',
-    'text': '#e6edf3',
-    'text_muted': '#8b949e',
-    'accent': '#58a6ff',
-    'accent_soft': 'rgba(88,166,255,0.15)',
-    'success': '#3fb950',
-    'success_soft': 'rgba(63,185,80,0.15)',
-    'warning': '#d29922',
-    'warning_soft': 'rgba(210,153,34,0.15)',
-    'danger': '#f85149',
-    'danger_soft': 'rgba(248,81,73,0.15)',
-    'path': 'rgba(88,166,255,0.18)',
-    'path_fail': 'rgba(248,81,73,0.15)',
-    'p5': '#f85149',
-    'p25': '#d29922',
-    'p50': '#3fb950',
-    'p75': '#d29922',
-    'p95': '#f85149',
-    'cone_90': 'rgba(88,166,255,0.08)',
-    'cone_95': 'rgba(88,166,255,0.15)',
-    'cone_99': 'rgba(88,166,255,0.25)',
-    'frontier_scatter': 'Plasma',
+    'bg': '#141414',
+    'paper': '#1a1a1a',
+    'grid': 'rgba(255,255,255,0.05)',
+    'text': '#f0f0f0',
+    'text_muted': '#888888',
+    'accent': '#D5FF61',
+    'accent_soft': 'rgba(213,255,97,0.15)',
+    'success': '#7ddf64',
+    'success_soft': 'rgba(125,223,100,0.12)',
+    'warning': '#e0a83a',
+    'warning_soft': 'rgba(224,168,58,0.12)',
+    'danger': '#ef6461',
+    'danger_soft': 'rgba(239,100,97,0.12)',
+    'path': 'rgba(213,255,97,0.12)',
+    'path_fail': 'rgba(239,100,97,0.12)',
+    'p5': '#ef6461',
+    'p25': '#e0a83a',
+    'p50': '#D5FF61',
+    'p75': '#e0a83a',
+    'p95': '#ef6461',
+    'cone_90': 'rgba(213,255,97,0.06)',
+    'cone_95': 'rgba(213,255,97,0.12)',
+    'cone_99': 'rgba(213,255,97,0.22)',
+    'frontier_scatter': 'Viridis',
     'heatmap': [
-        [0.0, '#f85149'], [0.25, '#fb8b7e'], [0.5, '#1c2333'],
-        [0.75, '#6db8ff'], [1.0, '#58a6ff']
+        [0.0, '#ef6461'], [0.25, '#f0957a'], [0.5, '#222222'],
+        [0.75, '#b5e87a'], [1.0, '#D5FF61']
     ],
-    'pie': ['#58a6ff', '#3fb950', '#d29922', '#f85149', '#bc8cff',
-            '#79c0ff', '#56d364', '#e3b341', '#ff7b72', '#d2a8ff',
-            '#a5d6ff', '#7ee787'],
-    'bar_primary': '#58a6ff',
-    'bar_secondary': '#8b949e',
-    'gold': '#e3b341',
+    'pie': ['#D5FF61', '#7ddf64', '#e0a83a', '#ef6461', '#b59cff',
+            '#a8f08c', '#6dd6a8', '#f0c75e', '#ff8a7a', '#d4b8ff',
+            '#c5f5a0', '#50d890'],
+    'bar_primary': '#D5FF61',
+    'bar_secondary': '#888888',
+    'gold': '#f0c75e',
 }
 
-FONT_FAMILY = 'DM Sans, -apple-system, BlinkMacSystemFont, sans-serif'
-FONT_MONO = 'JetBrains Mono, SF Mono, monospace'
+FONT_FAMILY = 'Outfit, -apple-system, BlinkMacSystemFont, sans-serif'
+FONT_MONO = 'IBM Plex Mono, SF Mono, monospace'
 
 
 def _base_layout(**overrides) -> dict:
@@ -82,7 +82,7 @@ def _base_layout(**overrides) -> dict:
             borderwidth=0,
         ),
         hoverlabel=dict(
-            bgcolor=COLORS['paper'],
+            bgcolor='#222222',
             font_size=12,
             font_family=FONT_FAMILY,
             font_color=COLORS['text'],
@@ -228,10 +228,10 @@ def plot_distribution(
         fig.add_vline(
             x=cvar_value,
             line_dash="dot",
-            line_color='#da3633',
+            line_color='#d44440',
             line_width=1.5,
             annotation_text=f"CVaR 95%: {cvar_value:,.0f}€",
-            annotation_font_color='#da3633',
+            annotation_font_color='#d44440',
         )
 
     fig.update_layout(**_base_layout(
@@ -455,7 +455,7 @@ def plot_portfolio_weights(
         textfont=dict(family=FONT_FAMILY, size=12, color=COLORS['text']),
         marker=dict(
             colors=COLORS['pie'][:len(tickers)],
-            line=dict(color=COLORS['paper'], width=2),
+            line=dict(color='#222222', width=2),
         ),
         pull=[0.02] * len(tickers),
     )])
@@ -614,7 +614,7 @@ def plot_efficient_frontier(
         x=[max_sharpe.volatility * 100],
         y=[max_sharpe.expected_return * 100],
         mode='markers',
-        marker=dict(size=18, color=COLORS['gold'], symbol='star', line=dict(width=2, color=COLORS['paper'])),
+        marker=dict(size=18, color=COLORS['gold'], symbol='star', line=dict(width=2, color='#222222')),
         name=f'Max Sharpe ({max_sharpe.sharpe_ratio:.2f})',
         hovertemplate=f'<b>Maximale Sharpe Ratio</b><br>Volatilität: {max_sharpe.volatility*100:.1f}%<br>Rendite: {max_sharpe.expected_return*100:.1f}%<br>Sharpe: {max_sharpe.sharpe_ratio:.2f}<extra></extra>'
     ))
@@ -625,7 +625,7 @@ def plot_efficient_frontier(
         x=[min_vol.volatility * 100],
         y=[min_vol.expected_return * 100],
         mode='markers',
-        marker=dict(size=14, color=COLORS['accent'], symbol='diamond', line=dict(width=2, color=COLORS['paper'])),
+        marker=dict(size=14, color=COLORS['accent'], symbol='diamond', line=dict(width=2, color='#222222')),
         name=f'Min Volatilität ({min_vol.volatility*100:.1f}%)',
         hovertemplate=f'<b>Minimale Volatilität</b><br>Volatilität: {min_vol.volatility*100:.1f}%<br>Rendite: {min_vol.expected_return*100:.1f}%<br>Sharpe: {min_vol.sharpe_ratio:.2f}<extra></extra>'
     ))
@@ -636,7 +636,7 @@ def plot_efficient_frontier(
             x=[current_volatility * 100],
             y=[current_return * 100],
             mode='markers',
-            marker=dict(size=14, color=COLORS['danger'], symbol='circle', line=dict(width=2, color=COLORS['paper'])),
+            marker=dict(size=14, color=COLORS['danger'], symbol='circle', line=dict(width=2, color='#222222')),
             name='Aktuelles Portfolio',
             hovertemplate=f'<b>Aktuelles Portfolio</b><br>Volatilität: {current_volatility*100:.1f}%<br>Rendite: {current_return*100:.1f}%<extra></extra>'
         ))
@@ -799,7 +799,7 @@ def plot_success_rate_gauge(
                 'tickfont': dict(color=COLORS['text_muted'], size=10),
             },
             'bar': {'color': bar_color, 'thickness': 0.8},
-            'bgcolor': COLORS['paper'],
+            'bgcolor': '#222222',
             'borderwidth': 0,
             'steps': [
                 {'range': [0, 70], 'color': COLORS['danger_soft']},
