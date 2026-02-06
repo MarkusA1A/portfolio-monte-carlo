@@ -11,43 +11,43 @@ from typing import Optional
 
 from src.simulation.monte_carlo import SimulationResults
 
-# === CHART THEME – Finexa-inspired dark + lime ===
+# === CHART THEME – Light fintech theme ===
 # Cohesive color palette for all charts
 COLORS = {
-    'bg': '#141414',
-    'paper': '#1a1a1a',
-    'grid': 'rgba(255,255,255,0.05)',
-    'text': '#f0f0f0',
+    'bg': '#fafafa',
+    'paper': '#ffffff',
+    'grid': 'rgba(0,0,0,0.06)',
+    'text': '#1a1a1a',
     'text_muted': '#888888',
-    'accent': '#D5FF61',
-    'accent_soft': 'rgba(213,255,97,0.15)',
-    'success': '#7ddf64',
-    'success_soft': 'rgba(125,223,100,0.12)',
-    'warning': '#e0a83a',
-    'warning_soft': 'rgba(224,168,58,0.12)',
-    'danger': '#ef6461',
-    'danger_soft': 'rgba(239,100,97,0.12)',
-    'path': 'rgba(213,255,97,0.12)',
-    'path_fail': 'rgba(239,100,97,0.12)',
-    'p5': '#ef6461',
-    'p25': '#e0a83a',
-    'p50': '#D5FF61',
-    'p75': '#e0a83a',
-    'p95': '#ef6461',
-    'cone_90': 'rgba(213,255,97,0.06)',
-    'cone_95': 'rgba(213,255,97,0.12)',
-    'cone_99': 'rgba(213,255,97,0.22)',
+    'accent': '#0d6e4f',
+    'accent_soft': 'rgba(13,110,79,0.08)',
+    'success': '#16a34a',
+    'success_soft': 'rgba(22,163,74,0.08)',
+    'warning': '#d97706',
+    'warning_soft': 'rgba(217,119,6,0.08)',
+    'danger': '#dc2626',
+    'danger_soft': 'rgba(220,38,38,0.08)',
+    'path': 'rgba(13,110,79,0.15)',
+    'path_fail': 'rgba(220,38,38,0.12)',
+    'p5': '#dc2626',
+    'p25': '#d97706',
+    'p50': '#0d6e4f',
+    'p75': '#d97706',
+    'p95': '#dc2626',
+    'cone_90': 'rgba(13,110,79,0.05)',
+    'cone_95': 'rgba(13,110,79,0.10)',
+    'cone_99': 'rgba(13,110,79,0.18)',
     'frontier_scatter': 'Viridis',
     'heatmap': [
-        [0.0, '#ef6461'], [0.25, '#f0957a'], [0.5, '#222222'],
-        [0.75, '#b5e87a'], [1.0, '#D5FF61']
+        [0.0, '#dc2626'], [0.25, '#f59e8b'], [0.5, '#f5f5f5'],
+        [0.75, '#6bc4a0'], [1.0, '#0d6e4f']
     ],
-    'pie': ['#D5FF61', '#7ddf64', '#e0a83a', '#ef6461', '#b59cff',
-            '#a8f08c', '#6dd6a8', '#f0c75e', '#ff8a7a', '#d4b8ff',
-            '#c5f5a0', '#50d890'],
-    'bar_primary': '#D5FF61',
-    'bar_secondary': '#888888',
-    'gold': '#f0c75e',
+    'pie': ['#0d6e4f', '#16a34a', '#d97706', '#dc2626', '#7c3aed',
+            '#059669', '#0891b2', '#ca8a04', '#e11d48', '#9333ea',
+            '#14b8a6', '#65a30d'],
+    'bar_primary': '#0d6e4f',
+    'bar_secondary': '#aaaaaa',
+    'gold': '#ca8a04',
 }
 
 FONT_FAMILY = 'Outfit, -apple-system, BlinkMacSystemFont, sans-serif'
@@ -82,7 +82,7 @@ def _base_layout(**overrides) -> dict:
             borderwidth=0,
         ),
         hoverlabel=dict(
-            bgcolor='#222222',
+            bgcolor='#ffffff',
             font_size=12,
             font_family=FONT_FAMILY,
             font_color=COLORS['text'],
@@ -228,10 +228,10 @@ def plot_distribution(
         fig.add_vline(
             x=cvar_value,
             line_dash="dot",
-            line_color='#d44440',
+            line_color='#b91c1c',
             line_width=1.5,
             annotation_text=f"CVaR 95%: {cvar_value:,.0f}€",
-            annotation_font_color='#d44440',
+            annotation_font_color='#b91c1c',
         )
 
     fig.update_layout(**_base_layout(
@@ -455,7 +455,7 @@ def plot_portfolio_weights(
         textfont=dict(family=FONT_FAMILY, size=12, color=COLORS['text']),
         marker=dict(
             colors=COLORS['pie'][:len(tickers)],
-            line=dict(color='#222222', width=2),
+            line=dict(color='#ffffff', width=2),
         ),
         pull=[0.02] * len(tickers),
     )])
@@ -614,7 +614,7 @@ def plot_efficient_frontier(
         x=[max_sharpe.volatility * 100],
         y=[max_sharpe.expected_return * 100],
         mode='markers',
-        marker=dict(size=18, color=COLORS['gold'], symbol='star', line=dict(width=2, color='#222222')),
+        marker=dict(size=18, color=COLORS['gold'], symbol='star', line=dict(width=2, color='#ffffff')),
         name=f'Max Sharpe ({max_sharpe.sharpe_ratio:.2f})',
         hovertemplate=f'<b>Maximale Sharpe Ratio</b><br>Volatilität: {max_sharpe.volatility*100:.1f}%<br>Rendite: {max_sharpe.expected_return*100:.1f}%<br>Sharpe: {max_sharpe.sharpe_ratio:.2f}<extra></extra>'
     ))
@@ -625,7 +625,7 @@ def plot_efficient_frontier(
         x=[min_vol.volatility * 100],
         y=[min_vol.expected_return * 100],
         mode='markers',
-        marker=dict(size=14, color=COLORS['accent'], symbol='diamond', line=dict(width=2, color='#222222')),
+        marker=dict(size=14, color=COLORS['accent'], symbol='diamond', line=dict(width=2, color='#ffffff')),
         name=f'Min Volatilität ({min_vol.volatility*100:.1f}%)',
         hovertemplate=f'<b>Minimale Volatilität</b><br>Volatilität: {min_vol.volatility*100:.1f}%<br>Rendite: {min_vol.expected_return*100:.1f}%<br>Sharpe: {min_vol.sharpe_ratio:.2f}<extra></extra>'
     ))
@@ -636,7 +636,7 @@ def plot_efficient_frontier(
             x=[current_volatility * 100],
             y=[current_return * 100],
             mode='markers',
-            marker=dict(size=14, color=COLORS['danger'], symbol='circle', line=dict(width=2, color='#222222')),
+            marker=dict(size=14, color=COLORS['danger'], symbol='circle', line=dict(width=2, color='#ffffff')),
             name='Aktuelles Portfolio',
             hovertemplate=f'<b>Aktuelles Portfolio</b><br>Volatilität: {current_volatility*100:.1f}%<br>Rendite: {current_return*100:.1f}%<extra></extra>'
         ))
@@ -799,7 +799,7 @@ def plot_success_rate_gauge(
                 'tickfont': dict(color=COLORS['text_muted'], size=10),
             },
             'bar': {'color': bar_color, 'thickness': 0.8},
-            'bgcolor': '#222222',
+            'bgcolor': '#f5f5f5',
             'borderwidth': 0,
             'steps': [
                 {'range': [0, 70], 'color': COLORS['danger_soft']},

@@ -180,7 +180,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"  # Collapsed on mobile for better UX
 )
 
-# Custom CSS — Finexa-inspired dark fintech theme + responsive layout
+# Custom CSS — Clean light fintech theme + responsive layout
 st.markdown("""
 <style>
     /* === FONTS === */
@@ -191,25 +191,25 @@ st.markdown("""
         --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
         --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
         --font-mono: 'IBM Plex Mono', 'SF Mono', 'Consolas', monospace;
-        --color-bg: #141414;
-        --color-surface: #1a1a1a;
-        --color-surface-raised: #222222;
-        --color-surface-hover: #2a2a2a;
-        --color-border: rgba(255, 255, 255, 0.06);
-        --color-border-hover: rgba(255, 255, 255, 0.12);
-        --color-text: #f0f0f0;
-        --color-text-secondary: #999999;
-        --color-text-muted: #666666;
-        --color-accent: #D5FF61;
-        --color-accent-dim: #b8e04e;
-        --color-accent-soft: rgba(213, 255, 97, 0.10);
-        --color-accent-glow: rgba(213, 255, 97, 0.06);
-        --color-success: #4ade80;
-        --color-success-soft: rgba(74, 222, 128, 0.10);
-        --color-warning: #fbbf24;
-        --color-warning-soft: rgba(251, 191, 36, 0.10);
-        --color-danger: #f87171;
-        --color-danger-soft: rgba(248, 113, 113, 0.10);
+        --color-bg: #fafafa;
+        --color-surface: #ffffff;
+        --color-surface-raised: #f5f5f5;
+        --color-surface-hover: #eeeeee;
+        --color-border: rgba(0, 0, 0, 0.08);
+        --color-border-hover: rgba(0, 0, 0, 0.15);
+        --color-text: #1a1a1a;
+        --color-text-secondary: #555555;
+        --color-text-muted: #888888;
+        --color-accent: #0d6e4f;
+        --color-accent-dim: #0b5e43;
+        --color-accent-soft: rgba(13, 110, 79, 0.08);
+        --color-accent-glow: rgba(13, 110, 79, 0.05);
+        --color-success: #16a34a;
+        --color-success-soft: rgba(22, 163, 74, 0.08);
+        --color-warning: #d97706;
+        --color-warning-soft: rgba(217, 119, 6, 0.08);
+        --color-danger: #dc2626;
+        --color-danger-soft: rgba(220, 38, 38, 0.08);
         --radius-sm: 8px;
         --radius-md: 12px;
         --radius-lg: 16px;
@@ -245,7 +245,7 @@ st.markdown("""
 
     /* === STREAMLIT OVERRIDES — BACKGROUND === */
     .stApp, [data-testid="stAppViewContainer"],
-    .main, section[data-testid="stSidebar"] {
+    .main {
         background-color: var(--color-bg) !important;
     }
     header[data-testid="stHeader"] {
@@ -279,16 +279,16 @@ st.markdown("""
         color: var(--color-text-secondary) !important;
     }
 
-    /* === METRIC CARDS (Finexa style: dark panel, no heavy border) === */
+    /* === METRIC CARDS === */
     [data-testid="stMetric"] {
-        background: var(--color-surface-raised);
+        background: var(--color-surface);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
         padding: 1.1rem 1.2rem !important;
-        transition: background var(--transition);
+        transition: background var(--transition), box-shadow var(--transition);
     }
     [data-testid="stMetric"]:hover {
-        background: var(--color-surface-hover);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     }
     [data-testid="stMetricValue"] {
         font-family: var(--font-mono) !important;
@@ -309,18 +309,12 @@ st.markdown("""
         font-family: var(--font-mono) !important;
         font-size: 0.8rem;
     }
-    /* Positive delta in lime */
-    [data-testid="stMetricDelta"] svg[data-testid="stMetricDeltaIcon-Up"] + div,
-    [data-testid="stMetricDelta"][style*="color: rgb(9, 171, 59)"],
-    [data-testid="stMetricDelta"][data-testid-delta-type="positive"] {
-        color: var(--color-accent) !important;
-    }
 
-    /* === TABS (Finexa: pill-style, lime active) === */
+    /* === TABS (pill-style, accent active) === */
     .stTabs [data-baseweb="tab-list"] {
         gap: 0.25rem;
         border-bottom: none;
-        background: var(--color-surface);
+        background: var(--color-surface-raised);
         border-radius: var(--radius-md);
         padding: 0.3rem;
     }
@@ -337,10 +331,10 @@ st.markdown("""
     }
     .stTabs [data-baseweb="tab"]:hover {
         color: var(--color-text);
-        background: var(--color-surface-raised);
+        background: var(--color-surface-hover);
     }
     .stTabs [data-baseweb="tab"][aria-selected="true"] {
-        color: #141414 !important;
+        color: #ffffff !important;
         background: var(--color-accent) !important;
         font-weight: 600;
         border-bottom: none !important;
@@ -364,7 +358,7 @@ st.markdown("""
         margin-bottom: 0.5rem !important;
     }
 
-    /* === BUTTONS (Finexa: lime primary, dark text) === */
+    /* === BUTTONS === */
     .stButton button[kind="primary"],
     .stFormSubmitButton button {
         font-family: var(--font-sans) !important;
@@ -374,7 +368,7 @@ st.markdown("""
         border-radius: var(--radius-md) !important;
         padding: 0.7rem 1.5rem !important;
         background: var(--color-accent) !important;
-        color: #141414 !important;
+        color: #ffffff !important;
         border: none !important;
         transition: all var(--transition);
     }
@@ -382,7 +376,7 @@ st.markdown("""
     .stFormSubmitButton button:hover {
         background: var(--color-accent-dim) !important;
         transform: translateY(-1px);
-        box-shadow: 0 4px 20px rgba(213, 255, 97, 0.15);
+        box-shadow: 0 4px 16px rgba(13, 110, 79, 0.2);
     }
     .stButton button:not([kind="primary"]),
     .stDownloadButton button {
@@ -390,17 +384,17 @@ st.markdown("""
         font-weight: 500 !important;
         border-radius: var(--radius-md) !important;
         border: 1px solid var(--color-border) !important;
-        background: var(--color-surface-raised) !important;
+        background: var(--color-surface) !important;
         color: var(--color-text) !important;
         transition: all var(--transition);
     }
     .stButton button:not([kind="primary"]):hover,
     .stDownloadButton button:hover {
-        background: var(--color-surface-hover) !important;
+        background: var(--color-surface-raised) !important;
         border-color: var(--color-border-hover) !important;
     }
 
-    /* === INPUTS (Finexa: clean, subtle) === */
+    /* === INPUTS === */
     .stTextInput input,
     .stNumberInput input,
     .stSelectbox [data-baseweb="select"],
@@ -426,7 +420,7 @@ st.markdown("""
         color: var(--color-text-secondary) !important;
     }
 
-    /* === SLIDER (lime accent) === */
+    /* === SLIDER === */
     .stSlider [data-baseweb="slider"] [role="slider"] {
         background: var(--color-accent) !important;
     }
@@ -465,7 +459,6 @@ st.markdown("""
         font-family: var(--font-sans) !important;
         font-size: 0.86rem;
         border-left-width: 3px !important;
-        background: var(--color-surface) !important;
     }
 
     /* === DIVIDERS === */
@@ -475,7 +468,7 @@ st.markdown("""
         margin: 2rem 0;
     }
 
-    /* === PROGRESS BAR (lime) === */
+    /* === PROGRESS BAR === */
     .stProgress > div > div {
         border-radius: 100px;
         height: 5px;
@@ -514,7 +507,7 @@ st.markdown("""
         padding: 0.2rem 0.55rem;
         border-radius: 100px;
         background: var(--color-accent);
-        color: #141414;
+        color: #ffffff;
         letter-spacing: 0.03em;
         margin-left: 0.6rem;
         vertical-align: middle;
@@ -1559,7 +1552,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                     x=list(range(savings_results.time_horizon + 1)),
                     y=savings_results.portfolio_values[i],
                     mode='lines',
-                    line=dict(width=0.5, color='rgba(213,255,97,0.12)'),
+                    line=dict(width=0.5, color='rgba(13,110,79,0.15)'),
                     showlegend=False
                 ))
 
@@ -1569,7 +1562,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 y=savings_results.total_contributions,
                 mode='lines',
                 name='Einzahlungen',
-                line=dict(width=2, color='#f87171', dash='dash')
+                line=dict(width=2, color='#dc2626', dash='dash')
             ))
 
             # Median line
@@ -1579,7 +1572,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 y=median_values,
                 mode='lines',
                 name='Median',
-                line=dict(width=2.5, color='#D5FF61')
+                line=dict(width=2.5, color='#0d6e4f')
             ))
 
             fig.update_layout(
@@ -1587,15 +1580,15 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 xaxis_title='Monate',
                 yaxis_title='Portfolio Wert (€)',
                 yaxis_tickformat=',.0f',
-                font=dict(family='Outfit, -apple-system, sans-serif', color='#f0f0f0', size=13),
+                font=dict(family='Outfit, -apple-system, sans-serif', color='#1a1a1a', size=13),
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)',
-                xaxis=dict(gridcolor='rgba(255,255,255,0.04)', tickfont=dict(color='#666666')),
-                yaxis=dict(gridcolor='rgba(255,255,255,0.04)', tickfont=dict(color='#666666')),
-                title_font=dict(size=15, color='#f0f0f0'),
+                xaxis=dict(gridcolor='rgba(0,0,0,0.06)', tickfont=dict(color='#888888')),
+                yaxis=dict(gridcolor='rgba(0,0,0,0.06)', tickfont=dict(color='#888888')),
+                title_font=dict(size=15, color='#1a1a1a'),
                 title_x=0,
-                legend=dict(font=dict(color='#999999'), bgcolor='rgba(0,0,0,0)'),
-                hoverlabel=dict(bgcolor='#222222', font_color='#f0f0f0', bordercolor='#D5FF61'),
+                legend=dict(font=dict(color='#555555'), bgcolor='rgba(0,0,0,0)'),
+                hoverlabel=dict(bgcolor='#ffffff', font_color='#1a1a1a', bordercolor='#0d6e4f'),
             )
 
             st.plotly_chart(fig, use_container_width=True)
@@ -2117,19 +2110,19 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 x='Szenario',
                 y='Rendite',
                 color='Rendite',
-                color_continuous_scale=[[0, '#ef6461'], [0.5, '#e0a83a'], [1, '#D5FF61']],
+                color_continuous_scale=[[0, '#dc2626'], [0.5, '#d97706'], [1, '#16a34a']],
                 title='Erwartete Rendite nach Szenario'
             )
             fig.update_layout(
                 yaxis_tickformat='.0%',
-                font=dict(family='Outfit, -apple-system, sans-serif', color='#f0f0f0', size=13),
+                font=dict(family='Outfit, -apple-system, sans-serif', color='#1a1a1a', size=13),
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)',
-                xaxis=dict(gridcolor='rgba(255,255,255,0.05)', tickfont=dict(color='#888888')),
-                yaxis=dict(gridcolor='rgba(255,255,255,0.05)', tickfont=dict(color='#888888')),
-                title_font=dict(size=16, color='#f0f0f0'),
+                xaxis=dict(gridcolor='rgba(0,0,0,0.06)', tickfont=dict(color='#888888')),
+                yaxis=dict(gridcolor='rgba(0,0,0,0.06)', tickfont=dict(color='#888888')),
+                title_font=dict(size=16, color='#1a1a1a'),
                 title_x=0,
-                hoverlabel=dict(bgcolor='#222222', font_color='#f0f0f0', bordercolor='#D5FF61'),
+                hoverlabel=dict(bgcolor='#ffffff', font_color='#1a1a1a', bordercolor='#0d6e4f'),
             )
             st.plotly_chart(fig, use_container_width=True)
 
@@ -2331,14 +2324,14 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 name='Vor Steuern',
                 x=['Durchschnitt', 'Median'],
                 y=[tax_cost_results.mean_final_before_tax, np.median(tax_cost_results.final_value_before_tax)],
-                marker_color='#D5FF61',
+                marker_color='#0d6e4f',
                 marker_line_width=0,
             ))
             fig.add_trace(go.Bar(
                 name='Nach Steuern',
                 x=['Durchschnitt', 'Median'],
                 y=[tax_cost_results.mean_final_after_tax, tax_cost_results.median_final_after_tax],
-                marker_color='#b59cff',
+                marker_color='#7c3aed',
                 marker_line_width=0,
             ))
             fig.update_layout(
@@ -2346,15 +2339,15 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 title='Endwert-Vergleich',
                 yaxis_title='Endwert (€)',
                 height=400,
-                font=dict(family='Outfit, -apple-system, sans-serif', color='#f0f0f0', size=13),
+                font=dict(family='Outfit, -apple-system, sans-serif', color='#1a1a1a', size=13),
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)',
-                xaxis=dict(gridcolor='rgba(255,255,255,0.05)', tickfont=dict(color='#888888')),
-                yaxis=dict(gridcolor='rgba(255,255,255,0.05)', tickfont=dict(color='#888888')),
-                title_font=dict(size=16, color='#f0f0f0'),
+                xaxis=dict(gridcolor='rgba(0,0,0,0.06)', tickfont=dict(color='#888888')),
+                yaxis=dict(gridcolor='rgba(0,0,0,0.06)', tickfont=dict(color='#888888')),
+                title_font=dict(size=16, color='#1a1a1a'),
                 title_x=0,
-                legend=dict(font=dict(color='#888888'), bgcolor='rgba(0,0,0,0)'),
-                hoverlabel=dict(bgcolor='#222222', font_color='#f0f0f0', bordercolor='#D5FF61'),
+                legend=dict(font=dict(color='#555555'), bgcolor='rgba(0,0,0,0)'),
+                hoverlabel=dict(bgcolor='#ffffff', font_color='#1a1a1a', bordercolor='#0d6e4f'),
             )
             st.plotly_chart(fig, use_container_width=True)
 
