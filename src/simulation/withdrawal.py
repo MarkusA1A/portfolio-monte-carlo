@@ -99,6 +99,8 @@ class WithdrawalResults:
     @property
     def withdrawal_rate(self) -> float:
         """Initiale Entnahmerate (SWR - Safe Withdrawal Rate)."""
+        if self.initial_value == 0:
+            return 0.0
         return self.annual_withdrawal / self.initial_value
 
 

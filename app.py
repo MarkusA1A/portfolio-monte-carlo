@@ -1163,6 +1163,12 @@ if run_simulation:
     elif abs(sum(weights.values()) - 1.0) > 0.01:
         st.error(f"Gewichtungen müssen 100% ergeben. Aktuell: {sum(weights.values())*100:.1f}%")
     else:
+        # Clear previous results to prevent stale data display on failure
+        for key in ['results', 'portfolio', 'benchmark_data', 'savings_results',
+                     'scenario_results', 'efficient_frontier', 'tax_cost_results',
+                     'withdrawal_results', 'swr_result', 'swr_params']:
+            st.session_state[key] = None
+
         # Scroll to top so user sees progress
         scroll_to_top()
 
@@ -1174,8 +1180,10 @@ if run_simulation:
         original_simulations = num_simulations
 
         if estimated_memory > MAX_MEMORY_MB:
-            # Auto-reduce simulations to fit within memory limit
-            while estimated_memory > MAX_MEMORY_MB and num_simulations > 1000:
+            # Auto-reduce simulations to fit within memory limit (max 20 halvings)
+            for _ in range(20):
+                if estimated_memory <= MAX_MEMORY_MB or num_simulations <= 1000:
+                    break
                 num_simulations = num_simulations // 2
                 estimated_memory = estimate_memory_mb(num_simulations, time_horizon_days, len(tickers))
 
@@ -1204,8 +1212,11 @@ if run_simulation:
 
             # Load benchmark data
             progress.progress(20, text="Lade Benchmark-Daten...")
-            benchmark_stats = provider.calculate_statistics([benchmark_ticker], data_period)
-            st.session_state.benchmark_data = benchmark_stats.get(benchmark_ticker)
+            try:
+                benchmark_stats = provider.calculate_statistics([benchmark_ticker], data_period)
+                st.session_state.benchmark_data = benchmark_stats.get(benchmark_ticker)
+            except Exception:
+                st.session_state.benchmark_data = None
 
         except Exception as e:
             st.error(f"Fehler beim Laden der Daten: {e}")
@@ -1757,7 +1768,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
         # Calculate withdrawal rate
         annual_withdrawal = monthly_withdrawal * 12
-        withdrawal_rate = annual_withdrawal / withdrawal_initial * 100
+        withdrawal_rate = (annual_withdrawal / withdrawal_initial * 100) if withdrawal_initial > 0 else 0.0
 
         st.info(f"**Entnahmerate**: {withdrawal_rate:.1f}% p.a. (Die '4%-Regel' gilt als konservativ)")
 

@@ -20,6 +20,8 @@ class Asset:
 
     def annualized_return(self) -> float:
         """Calculate annualized return from daily return."""
+        if self.mean_return <= -1:
+            return -1.0
         return (1 + self.mean_return) ** 252 - 1
 
     def annualized_volatility(self) -> float:
@@ -99,14 +101,24 @@ class Portfolio:
             returns_df = pd.DataFrame({
                 a.ticker: a.historical_returns for a in self.assets
             })
-            return returns_df.dropna().values
+            result = returns_df.dropna().values
+            if len(result) == 0:
+                return None
+            return result
         return None
 
     def get_correlation_matrix(self) -> np.ndarray:
         """Calculate correlation matrix from covariance matrix."""
         cov = self.get_covariance_matrix()
         std = np.sqrt(np.diag(cov))
-        corr = cov / np.outer(std, std)
+        # Prevent division by zero for assets with zero variance
+        std_safe = np.where(std == 0, 1.0, std)
+        corr = cov / np.outer(std_safe, std_safe)
+        # Set correlation to 0 where std is 0, keep diagonal as 1
+        zero_mask = (std == 0)
+        corr[zero_mask, :] = 0.0
+        corr[:, zero_mask] = 0.0
+        np.fill_diagonal(corr, 1.0)
         return corr
 
     def expected_return(self) -> float:
@@ -117,11 +129,13 @@ class Portfolio:
         """Calculate expected portfolio volatility (daily)."""
         cov = self.get_covariance_matrix()
         variance = self.weights @ cov @ self.weights
-        return float(np.sqrt(variance))
+        return float(np.sqrt(max(0, variance)))
 
     def annualized_expected_return(self) -> float:
         """Calculate annualized expected return."""
         daily = self.expected_return()
+        if daily <= -1:
+            return -1.0
         return (1 + daily) ** 252 - 1
 
     def annualized_expected_volatility(self) -> float:

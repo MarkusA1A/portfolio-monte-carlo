@@ -113,6 +113,10 @@ def plot_simulation_paths(
     """
     fig = go.Figure()
 
+    if results.num_simulations == 0 or results.portfolio_values.size == 0:
+        fig.update_layout(**_base_layout(title='Keine Simulationsdaten verfügbar'))
+        return fig
+
     time_axis = np.arange(results.portfolio_values.shape[1])
     days = time_axis
 
@@ -179,6 +183,10 @@ def plot_distribution(
         Plotly figure
     """
     fig = go.Figure()
+
+    if len(final_values) == 0:
+        fig.update_layout(**_base_layout(title='Keine Daten für Verteilung verfügbar'))
+        return fig
 
     # Histogram
     fig.add_trace(go.Histogram(
@@ -317,6 +325,11 @@ def plot_correlation_heatmap(
     Returns:
         Plotly figure
     """
+    if correlation_matrix.shape != (len(tickers), len(tickers)):
+        fig = go.Figure()
+        fig.update_layout(**_base_layout(title='Korrelationsmatrix: Dimensionen stimmen nicht überein'))
+        return fig
+
     fig = go.Figure(data=go.Heatmap(
         z=correlation_matrix,
         x=tickers,

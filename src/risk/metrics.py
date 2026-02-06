@@ -110,7 +110,7 @@ def calculate_max_drawdown(values: np.ndarray) -> tuple[float, int, int]:
             peak = value
             peak_idx = i
 
-        drawdown = (peak - value) / peak
+        drawdown = (peak - value) / peak if peak != 0 else 0.0
         if drawdown > max_dd:
             max_dd = drawdown
             max_dd_peak_idx = peak_idx

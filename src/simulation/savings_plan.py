@@ -35,6 +35,8 @@ class SavingsPlanResults:
 
     @property
     def mean_return(self) -> float:
+        if self.total_invested == 0:
+            return 0.0
         return (self.mean_final_value - self.total_invested) / self.total_invested
 
     def percentile(self, p: float) -> float:

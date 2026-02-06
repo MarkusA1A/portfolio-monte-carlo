@@ -23,6 +23,8 @@ def calculate_var(
     Returns:
         VaR as absolute value (negative = loss)
     """
+    if len(returns) == 0:
+        return 0.0
     percentile = (1 - confidence) * 100
     var_return = np.percentile(returns, percentile)
     return var_return * initial_value
@@ -46,6 +48,8 @@ def calculate_cvar(
     Returns:
         CVaR as absolute value (negative = loss)
     """
+    if len(returns) == 0:
+        return 0.0
     var_return = calculate_var(returns, confidence, initial_value=1.0)
     # CVaR is the mean of returns below VaR
     tail_returns = returns[returns <= var_return]
@@ -140,6 +144,9 @@ def calculate_marginal_var(
     cov = np.cov(portfolio_returns, asset_returns)[0, 1]
     portfolio_std = np.std(portfolio_returns)
 
+    if portfolio_std == 0:
+        return 0.0
+
     beta = cov / (portfolio_std ** 2)
     return beta * portfolio_var
 
@@ -166,6 +173,9 @@ def calculate_component_var(
     """
     portfolio_variance = weights @ covariance_matrix @ weights
     portfolio_std = np.sqrt(portfolio_variance)
+
+    if portfolio_std == 0:
+        return np.zeros_like(weights)
 
     z_score = stats.norm.ppf(1 - confidence)
 

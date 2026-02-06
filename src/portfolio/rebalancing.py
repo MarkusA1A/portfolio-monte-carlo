@@ -124,10 +124,19 @@ class ThresholdRebalancing(RebalancingStrategy):
     ) -> bool:
         # Handle 2D array (multiple simulations)
         if current_weights.ndim == 2:
-            max_deviation = np.max(np.abs(current_weights - target_weights), axis=1)
+            # Normalize weights to prevent drift-based false triggers
+            weight_sums = current_weights.sum(axis=1, keepdims=True)
+            weight_sums = np.where(weight_sums == 0, 1.0, weight_sums)
+            normalized = current_weights / weight_sums
+            max_deviation = np.max(np.abs(normalized - target_weights), axis=1)
             return np.any(max_deviation > self.threshold)
 
-        max_deviation = np.max(np.abs(current_weights - target_weights))
+        # Normalize for 1D case
+        weight_sum = current_weights.sum()
+        if weight_sum == 0:
+            return True
+        normalized = current_weights / weight_sum
+        max_deviation = np.max(np.abs(normalized - target_weights))
         return max_deviation > self.threshold
 
     @property

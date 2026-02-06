@@ -62,17 +62,27 @@ class MarketDataProvider:
             return self._cache[cache_key]
 
         # Fetch data
-        data = yf.download(
-            tickers,
-            period=period,
-            auto_adjust=True,
-            progress=False
-        )
+        try:
+            data = yf.download(
+                tickers,
+                period=period,
+                auto_adjust=True,
+                progress=False
+            )
+        except Exception as e:
+            raise ValueError(f"Fehler beim Abrufen der Marktdaten für {tickers}: {e}")
+
+        if data is None or data.empty:
+            raise ValueError(f"Keine Marktdaten für {tickers} verfügbar")
 
         # Handle single vs multiple tickers
         if len(tickers) == 1:
+            if 'Close' not in data.columns:
+                raise ValueError(f"Keine Kursdaten (Close) für {tickers[0]} gefunden")
             prices = data[['Close']].rename(columns={'Close': tickers[0]})
         else:
+            if 'Close' not in data.columns:
+                raise ValueError(f"Keine Kursdaten (Close) für {tickers} gefunden")
             prices = data['Close']
 
         self._cache[cache_key] = prices
@@ -80,7 +90,7 @@ class MarketDataProvider:
 
     def calculate_returns(self, prices: pd.DataFrame) -> pd.DataFrame:
         """Calculate daily returns from prices."""
-        return prices.pct_change().dropna()
+        return prices.pct_change(fill_method=None).dropna()
 
     def calculate_statistics(
         self,
@@ -103,7 +113,12 @@ class MarketDataProvider:
         stats = {}
         for ticker in tickers:
             ticker_returns = returns[ticker].dropna()
-            ticker_info = yf.Ticker(ticker).info
+            if len(ticker_returns) < 2:
+                raise ValueError(f"Nicht genügend Daten für {ticker}: nur {len(ticker_returns)} gültige Renditen")
+            try:
+                ticker_info = yf.Ticker(ticker).info
+            except Exception:
+                ticker_info = {}
 
             mean_daily = float(ticker_returns.mean())
             std_daily = float(ticker_returns.std())

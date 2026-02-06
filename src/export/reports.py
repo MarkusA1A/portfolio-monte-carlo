@@ -34,109 +34,113 @@ def create_excel_report(
     """
     output = io.BytesIO()
 
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        # Sheet 1: Portfolio Summary
-        portfolio_df = portfolio.to_dataframe()
-        portfolio_df.to_excel(writer, sheet_name='Portfolio', index=False)
+    try:
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            # Sheet 1: Portfolio Summary
+            portfolio_df = portfolio.to_dataframe()
+            portfolio_df.to_excel(writer, sheet_name='Portfolio', index=False)
 
-        # Sheet 2: Simulation Results Summary
-        summary_data = {
-            'Metrik': [
-                'Anfangskapital',
-                'Erwarteter Endwert',
-                'Median Endwert',
-                'Standardabweichung',
-                'Minimum',
-                'Maximum',
-                f'VaR ({confidence_level:.0%})',
-                f'CVaR ({confidence_level:.0%})',
-                'Gewinnwahrscheinlichkeit',
-                'Verlustwahrscheinlichkeit',
-                'Sharpe Ratio',
-                'Sortino Ratio',
-                'Max Drawdown',
-                'Volatilität (ann.)'
-            ],
-            'Wert': [
-                initial_value,
-                results.mean_final_value,
-                results.median_final_value,
-                results.std_final_value,
-                results.min_value,
-                results.max_value,
-                var_value,
-                cvar_value,
-                np.mean(results.final_values > initial_value),
-                np.mean(results.final_values < initial_value),
-                metrics.get('sharpe', 0),
-                metrics.get('sortino', 0),
-                metrics.get('max_drawdown', 0),
-                metrics.get('volatility', 0)
-            ]
-        }
-        summary_df = pd.DataFrame(summary_data)
-        summary_df.to_excel(writer, sheet_name='Zusammenfassung', index=False)
-
-        # Sheet 3: Percentile Analysis
-        percentiles = [1, 5, 10, 25, 50, 75, 90, 95, 99]
-        perc_data = {
-            'Perzentil': [f'{p}%' for p in percentiles],
-            'Endwert': [results.percentile(p) for p in percentiles],
-            'Rendite': [(results.percentile(p) / initial_value - 1) for p in percentiles]
-        }
-        perc_df = pd.DataFrame(perc_data)
-        perc_df.to_excel(writer, sheet_name='Perzentile', index=False)
-
-        # Sheet 4: Correlation Matrix
-        corr_matrix = portfolio.get_correlation_matrix()
-        corr_df = pd.DataFrame(
-            corr_matrix,
-            index=portfolio.tickers,
-            columns=portfolio.tickers
-        )
-        corr_df.to_excel(writer, sheet_name='Korrelationen')
-
-        # Sheet 5: Distribution of Final Values
-        final_values_df = pd.DataFrame({
-            'Simulation': range(1, len(results.final_values) + 1),
-            'Endwert': results.final_values,
-            'Rendite': results.returns
-        })
-        # Only include first 1000 for file size
-        final_values_df.head(1000).to_excel(
-            writer, sheet_name='Simulationsdaten', index=False
-        )
-
-        # Sheet 6: Tax & Cost Analysis (if available)
-        if tax_cost_results is not None:
-            tax_data = {
+            # Sheet 2: Simulation Results Summary
+            summary_data = {
                 'Metrik': [
-                    'Endwert vor Steuern (Ø)',
-                    'Endwert nach Steuern (Ø)',
-                    'Realisierte Gewinne (Ø)',
-                    'Gezahlte Steuern (Ø)',
-                    'Transaktionskosten (Ø)',
-                    'Unrealisierte Gewinne (Ø)',
-                    'Rebalancing-Events (Ø)',
-                    'Effektiver Steuersatz',
-                    'Steuersatz (KESt)',
-                    'Gesamte Kostenbelastung'
+                    'Anfangskapital',
+                    'Erwarteter Endwert',
+                    'Median Endwert',
+                    'Standardabweichung',
+                    'Minimum',
+                    'Maximum',
+                    f'VaR ({confidence_level:.0%})',
+                    f'CVaR ({confidence_level:.0%})',
+                    'Gewinnwahrscheinlichkeit',
+                    'Verlustwahrscheinlichkeit',
+                    'Sharpe Ratio',
+                    'Sortino Ratio',
+                    'Max Drawdown',
+                    'Volatilität (ann.)'
                 ],
                 'Wert': [
-                    tax_cost_results.mean_final_before_tax,
-                    tax_cost_results.mean_final_after_tax,
-                    tax_cost_results.mean_realized_gains,
-                    tax_cost_results.mean_taxes_paid,
-                    tax_cost_results.mean_transaction_costs,
-                    tax_cost_results.mean_unrealized_gains,
-                    tax_cost_results.mean_rebalancing_events,
-                    tax_cost_results.effective_tax_rate,
-                    tax_cost_results.tax_rate,
-                    tax_cost_results.total_cost_impact
+                    initial_value,
+                    results.mean_final_value,
+                    results.median_final_value,
+                    results.std_final_value,
+                    results.min_value,
+                    results.max_value,
+                    var_value,
+                    cvar_value,
+                    np.mean(results.final_values > initial_value),
+                    np.mean(results.final_values < initial_value),
+                    metrics.get('sharpe', 0),
+                    metrics.get('sortino', 0),
+                    metrics.get('max_drawdown', 0),
+                    metrics.get('volatility', 0)
                 ]
             }
-            tax_df = pd.DataFrame(tax_data)
-            tax_df.to_excel(writer, sheet_name='Steuern & Kosten', index=False)
+            summary_df = pd.DataFrame(summary_data)
+            summary_df.to_excel(writer, sheet_name='Zusammenfassung', index=False)
+
+            # Sheet 3: Percentile Analysis
+            percentiles = [1, 5, 10, 25, 50, 75, 90, 95, 99]
+            perc_data = {
+                'Perzentil': [f'{p}%' for p in percentiles],
+                'Endwert': [results.percentile(p) for p in percentiles],
+                'Rendite': [(results.percentile(p) / initial_value - 1) for p in percentiles]
+            }
+            perc_df = pd.DataFrame(perc_data)
+            perc_df.to_excel(writer, sheet_name='Perzentile', index=False)
+
+            # Sheet 4: Correlation Matrix
+            corr_matrix = portfolio.get_correlation_matrix()
+            corr_df = pd.DataFrame(
+                corr_matrix,
+                index=portfolio.tickers,
+                columns=portfolio.tickers
+            )
+            corr_df.to_excel(writer, sheet_name='Korrelationen')
+
+            # Sheet 5: Distribution of Final Values
+            final_values_df = pd.DataFrame({
+                'Simulation': range(1, len(results.final_values) + 1),
+                'Endwert': results.final_values,
+                'Rendite': results.returns
+            })
+            # Only include first 1000 for file size
+            final_values_df.head(1000).to_excel(
+                writer, sheet_name='Simulationsdaten', index=False
+            )
+
+            # Sheet 6: Tax & Cost Analysis (if available)
+            if tax_cost_results is not None:
+                tax_data = {
+                    'Metrik': [
+                        'Endwert vor Steuern (Ø)',
+                        'Endwert nach Steuern (Ø)',
+                        'Realisierte Gewinne (Ø)',
+                        'Gezahlte Steuern (Ø)',
+                        'Transaktionskosten (Ø)',
+                        'Unrealisierte Gewinne (Ø)',
+                        'Rebalancing-Events (Ø)',
+                        'Effektiver Steuersatz',
+                        'Steuersatz (KESt)',
+                        'Gesamte Kostenbelastung'
+                    ],
+                    'Wert': [
+                        tax_cost_results.mean_final_before_tax,
+                        tax_cost_results.mean_final_after_tax,
+                        tax_cost_results.mean_realized_gains,
+                        tax_cost_results.mean_taxes_paid,
+                        tax_cost_results.mean_transaction_costs,
+                        tax_cost_results.mean_unrealized_gains,
+                        tax_cost_results.mean_rebalancing_events,
+                        tax_cost_results.effective_tax_rate,
+                        tax_cost_results.tax_rate,
+                        tax_cost_results.total_cost_impact
+                    ]
+                }
+                tax_df = pd.DataFrame(tax_data)
+                tax_df.to_excel(writer, sheet_name='Steuern & Kosten', index=False)
+
+    except Exception as e:
+        raise RuntimeError(f"Fehler beim Erstellen des Excel-Reports: {e}")
 
     output.seek(0)
     return output.getvalue()

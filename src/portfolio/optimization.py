@@ -138,7 +138,11 @@ class PortfolioOptimizer:
 
         # Kleine Gewichte auf 0 setzen
         weights[np.abs(weights) < 1e-4] = 0
-        weights = weights / np.sum(weights)  # Renormalisieren
+        weight_sum = np.sum(weights)
+        if weight_sum == 0:
+            weights = np.ones(self.n_assets) / self.n_assets
+        else:
+            weights = weights / weight_sum
 
         return OptimizedPortfolio(
             weights=weights,
@@ -181,7 +185,11 @@ class PortfolioOptimizer:
 
         weights = result.x if result.success else init_weights
         weights[np.abs(weights) < 1e-4] = 0
-        weights = weights / np.sum(weights)
+        weight_sum = np.sum(weights)
+        if weight_sum == 0:
+            weights = np.ones(self.n_assets) / self.n_assets
+        else:
+            weights = weights / weight_sum
 
         return OptimizedPortfolio(
             weights=weights,
@@ -230,7 +238,11 @@ class PortfolioOptimizer:
 
         weights = result.x
         weights[np.abs(weights) < 1e-4] = 0
-        weights = weights / np.sum(weights)
+        weight_sum = np.sum(weights)
+        if weight_sum == 0:
+            weights = np.ones(self.n_assets) / self.n_assets
+        else:
+            weights = weights / weight_sum
 
         return OptimizedPortfolio(
             weights=weights,

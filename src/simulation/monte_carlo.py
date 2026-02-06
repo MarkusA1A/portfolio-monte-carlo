@@ -126,7 +126,8 @@ class MonteCarloSimulator:
         portfolio: "Portfolio",
         rebalancing_strategy=None,
         store_price_paths: bool = False,
-        tax_cost_calculator: Optional["TaxCostCalculator"] = None
+        tax_cost_calculator: Optional["TaxCostCalculator"] = None,
+        _allow_batching: bool = True
     ) -> "SimulationResults | tuple[SimulationResults, Optional[TaxCostResults]]":
         """
         Run Monte Carlo simulation for the given portfolio.
@@ -136,6 +137,7 @@ class MonteCarloSimulator:
             rebalancing_strategy: Optional rebalancing strategy
             store_price_paths: If True, store full price paths (uses more memory)
             tax_cost_calculator: Optional calculator for tax and transaction costs
+            _allow_batching: Internal flag to prevent recursive batching
 
         Returns:
             SimulationResults (or tuple with TaxCostResults if calculator provided)
@@ -146,7 +148,7 @@ class MonteCarloSimulator:
         estimated_memory = self._estimate_memory_mb(num_assets, store_price_paths)
         use_batched = estimated_memory > self.MEMORY_EFFICIENT_THRESHOLD_MB
 
-        if use_batched and self.num_simulations > 5000:
+        if use_batched and self.num_simulations > 5000 and _allow_batching:
             result = self._run_batched_simulation(portfolio, rebalancing_strategy)
             return (result, None) if tax_cost_calculator else result
 
@@ -307,6 +309,8 @@ class MonteCarloSimulator:
             # Update weights based on price changes (vectorized)
             weight_factors = (1 + period_returns) / (1 + weighted_returns[:, np.newaxis])
             current_weights = current_weights * weight_factors
+            # Normalize to prevent floating-point drift
+            current_weights = current_weights / current_weights.sum(axis=1, keepdims=True)
 
             # Check if rebalancing is needed
             if strategy.should_rebalance(t + 1, current_weights, weights):
@@ -354,7 +358,8 @@ class MonteCarloSimulator:
 
             # Run simulation for this batch (don't store price paths in batched mode)
             batch_result = self.run_simulation(
-                portfolio, rebalancing_strategy, store_price_paths=False
+                portfolio, rebalancing_strategy, store_price_paths=False,
+                _allow_batching=False
             )
 
             all_portfolio_values.append(batch_result.portfolio_values)
