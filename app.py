@@ -472,7 +472,13 @@ st.markdown("""
     .stProgress > div > div {
         border-radius: 100px;
         height: 5px;
-        background: var(--color-accent) !important;
+        background: var(--color-success) !important;
+    }
+    .stProgress p {
+        font-family: var(--font-sans) !important;
+        font-size: 0.82rem;
+        margin-top: 0.45rem !important;
+        color: var(--color-text-secondary);
     }
 
     /* === CUSTOM CLASSES === */
@@ -1293,8 +1299,7 @@ if run_simulation:
         except Exception as e:
             st.session_state.efficient_frontier = None
 
-        progress.progress(100, text="Fertig!")
-        st.success("Simulation abgeschlossen!")
+        progress.progress(100, text="Simulation abgeschlossen.")
 
 # Display results with tabs
 if st.session_state.results is not None and st.session_state.portfolio is not None:
