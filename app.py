@@ -53,7 +53,6 @@ import yfinance as yf
 import re
 
 
-@st.cache_data(ttl=3600)  # Cache for 1 hour
 def get_code_statistics() -> dict:
     """Count lines of code in the project."""
     base_path = Path(__file__).parent
