@@ -474,10 +474,13 @@ st.markdown("""
         height: 5px;
         background: var(--color-success) !important;
     }
+    .stProgress {
+        margin-bottom: 1.2rem;
+    }
     .stProgress p {
         font-family: var(--font-sans) !important;
         font-size: 0.82rem;
-        margin-top: 0.45rem !important;
+        margin-top: 0.5rem !important;
         color: var(--color-text-secondary);
     }
 
