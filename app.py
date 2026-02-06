@@ -816,6 +816,7 @@ def estimate_memory_mb(num_simulations: int, time_horizon_days: int, num_assets:
 # Sidebar - Configuration
 with st.sidebar:
     st.image("assets/casino_monte_carlo.jpg", caption="Casino de Monte-Carlo", use_container_width=True)
+    st.caption('Foto: Fczarnowski · [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Le_casino_de_Monte-Carlo.JPG) · CC BY-SA 4.0')
     st.header("Konfiguration")
 
     # Portfolio Load/Save Section
