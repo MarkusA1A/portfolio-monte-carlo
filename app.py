@@ -175,7 +175,7 @@ def parse_german_number(text: str, default: int = 0) -> int:
 # Page configuration - responsive layout
 st.set_page_config(
     page_title="Portfolio Monte Carlo Simulation",
-    page_icon="📈",
+    page_icon="◆",
     layout="wide",
     initial_sidebar_state="collapsed"  # Collapsed on mobile for better UX
 )
@@ -795,10 +795,10 @@ def estimate_memory_mb(num_simulations: int, time_horizon_days: int, num_assets:
 
 # Sidebar - Configuration
 with st.sidebar:
-    st.header("⚙️ Konfiguration")
+    st.header("Konfiguration")
 
     # Portfolio Load/Save Section
-    with st.expander("💾 Portfolio Laden/Speichern", expanded=False):
+    with st.expander("Portfolio Laden/Speichern", expanded=False):
         uploaded_file = st.file_uploader(
             "Portfolio laden",
             type=["json"],
@@ -827,16 +827,16 @@ with st.sidebar:
     )
 
     # Asset Class Examples
-    with st.expander("📚 Beliebte Ticker nach Asset-Klasse", expanded=False):
+    with st.expander("Beliebte Ticker nach Asset-Klasse", expanded=False):
         st.markdown("""
-        **🏢 Aktien (Einzeltitel)**
+        **Aktien (Einzeltitel)**
         - `AAPL` Apple, `MSFT` Microsoft, `GOOGL` Google, `AMZN` Amazon, `NVDA` Nvidia
 
-        **📈 Aktien-ETFs (breit diversifiziert)**
+        **Aktien-ETFs (breit diversifiziert)**
         - `VTI` Total US Market, `VOO` S&P 500, `QQQ` NASDAQ 100
         - `VGK` Europa, `EEM` Emerging Markets, `VT` Welt
 
-        **🏠 Immobilien (REITs)** ⭐
+        **Immobilien (REITs)**
         - `VNQ` Vanguard Real Estate ETF (USA)
         - `VNQI` Vanguard Global ex-US Real Estate
         - `IYR` iShares US Real Estate
@@ -845,17 +845,17 @@ with st.sidebar:
 
         *REITs bieten: Inflationsschutz, Dividenden, niedrige Korrelation zu Tech-Aktien*
 
-        **💵 Anleihen**
+        **Anleihen**
         - `BND` Total Bond Market, `TLT` 20+ Year Treasury
         - `AGG` Core US Aggregate Bond
 
-        **🥇 Rohstoffe**
+        **Rohstoffe**
         - `GLD` Gold, `SLV` Silber, `DBC` Rohstoff-Basket
 
-        **💶 Geldmarkt (sehr sicher)**
+        **Geldmarkt (sehr sicher)**
         - `SGOV` 0-3 Month Treasury, `BIL` 1-3 Month T-Bill
         """)
-        st.info("💡 **Tipp**: REITs + Aktien + Anleihen = klassisches diversifiziertes Portfolio")
+        st.info("**Tipp:** REITs + Aktien + Anleihen = klassisches diversifiziertes Portfolio")
 
     # Process inputs (handle both tickers and ISINs)
     raw_inputs = [t.strip() for t in tickers_input.split(",") if t.strip()]
@@ -872,7 +872,7 @@ with st.sidebar:
     # Show ISIN conversions to user
     if isin_mappings:
         conversion_text = ", ".join([f"{isin} → {ticker}" for isin, ticker in isin_mappings.items()])
-        st.info(f"🔄 ISIN-Konvertierung: {conversion_text}")
+        st.info(f"ISIN-Konvertierung: {conversion_text}")
 
     default_initial = loaded["initial_value"] if loaded else 100000
     initial_value_str = st.text_input(
@@ -954,11 +954,11 @@ with st.sidebar:
     remaining = 100.0 - total
 
     if abs(remaining) < 0.1:
-        st.success(f"✅ Summe: 100%")
+        st.success(f"Summe: 100%")
     elif remaining > 0:
-        st.info(f"📊 Summe: {total:.1f}% | Noch {remaining:.1f}% verfügbar")
+        st.info(f"Summe: {total:.1f}% | Noch {remaining:.1f}% verfügbar")
     else:
-        st.warning(f"⚠️ Summe: {total:.1f}% - bitte reduzieren!")
+        st.warning(f"Summe: {total:.1f}% - bitte reduzieren!")
 
     # Convert to decimal weights (normalize to ensure sum = 1)
     if total > 0:
@@ -1038,7 +1038,7 @@ with st.sidebar:
     ) / 100
 
     # Sparplan Settings
-    st.subheader("💰 Sparplan")
+    st.subheader("Sparplan")
     enable_savings = st.checkbox("Sparplan aktivieren", value=False)
     monthly_contribution = st.number_input(
         "Monatliche Einzahlung (€)",
@@ -1050,7 +1050,7 @@ with st.sidebar:
     )
 
     # Tax & Cost Settings
-    st.subheader("💶 Steuern & Kosten")
+    st.subheader("Steuern & Kosten")
     enable_tax_costs = st.checkbox(
         "Steuern & Transaktionskosten berücksichtigen",
         value=False,
@@ -1101,10 +1101,10 @@ with st.sidebar:
 
     # Run button
     st.markdown("---")
-    run_simulation = st.button("🚀 Simulation starten", type="primary", use_container_width=True)
+    run_simulation = st.button("Simulation starten", type="primary", use_container_width=True)
 
     # Save Portfolio Section
-    with st.expander("💾 Portfolio speichern", expanded=False):
+    with st.expander("Portfolio speichern", expanded=False):
         portfolio_name = st.text_input(
             "Portfolio-Name",
             value=loaded["name"] if loaded else "",
@@ -1128,7 +1128,7 @@ with st.sidebar:
         filename = f"{portfolio_name or 'portfolio'}_{datetime.now().strftime('%Y%m%d')}.json"
 
         st.download_button(
-            label="📥 Portfolio herunterladen",
+            label="Portfolio herunterladen",
             data=config_json,
             file_name=filename,
             mime="application/json",
@@ -1159,12 +1159,12 @@ if run_simulation:
                 estimated_memory = estimate_memory_mb(num_simulations, time_horizon_days, len(tickers))
 
             st.warning(
-                f"⚠️ **Automatische Anpassung:** Simulationen von {original_simulations:,} auf {num_simulations:,} reduziert, "
+                f"**Automatische Anpassung:** Simulationen von {original_simulations:,} auf {num_simulations:,} reduziert, "
                 f"um Abstürze zu vermeiden ({len(tickers)} Assets, {time_horizon_years} Jahre)."
             )
         elif estimated_memory > 500:
             st.info(
-                f"ℹ️ Geschätzter Speicherbedarf: {estimated_memory:.0f} MB. "
+                f"Geschätzter Speicherbedarf: {estimated_memory:.0f} MB. "
                 f"Bei Problemen reduzieren Sie die Simulationsanzahl."
             )
 
@@ -1229,14 +1229,14 @@ if run_simulation:
             st.session_state.results = results
         except MemoryError:
             st.error(
-                "❌ Nicht genügend Speicher! Bitte reduzieren Sie:\n"
+                "Nicht genügend Speicher! Bitte reduzieren Sie:\n"
                 "- Anzahl der Simulationen\n"
                 "- Zeithorizont\n"
                 "- Anzahl der Assets"
             )
             st.stop()
         except Exception as e:
-            st.error(f"❌ Fehler bei der Simulation: {e}")
+            st.error(f"Fehler bei der Simulation: {e}")
             st.stop()
 
         # Savings plan simulation
@@ -1303,14 +1303,14 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
     # Create tabs for different views
     tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
-        "📊 Übersicht",
-        "📈 Benchmark",
-        "💰 Sparplan",
-        "🏦 Entnahme",
-        "🎯 Efficient Frontier",
-        "🎭 Szenarien",
-        "📥 Export",
-        "💶 Steuern & Kosten"
+        "Übersicht",
+        "Benchmark",
+        "Sparplan",
+        "Entnahme",
+        "Efficient Frontier",
+        "Szenarien",
+        "Export",
+        "Steuern & Kosten"
     ])
 
     # Calculate common metrics
@@ -1421,13 +1421,13 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
         with col2:
             st.subheader("VaR Kegel")
-            st.caption("ℹ️ Zeigt die mögliche Wertentwicklung über die Zeit mit Konfidenzintervallen. Der innere Bereich zeigt wahrscheinliche Szenarien, der äußere Bereich extreme aber mögliche Verläufe. Je breiter der Kegel, desto unsicherer die Prognose.")
+            st.caption("Zeigt die mögliche Wertentwicklung über die Zeit mit Konfidenzintervallen. Der innere Bereich zeigt wahrscheinliche Szenarien, der äußere Bereich extreme aber mögliche Verläufe. Je breiter der Kegel, desto unsicherer die Prognose.")
             fig_var = plot_var_cone(results)
             st.plotly_chart(fig_var, use_container_width=True)
 
         # Correlation Matrix
         st.subheader("Korrelationsmatrix")
-        with st.expander("ℹ️ Was zeigt die Korrelationsmatrix?", expanded=False):
+        with st.expander("Was zeigt die Korrelationsmatrix?", expanded=False):
             st.markdown(f"""
 **Interpretation der Werte:**
 - **+1.0**: Bewegen sich identisch (kein Diversifikationsvorteil)
@@ -1462,7 +1462,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
     # TAB 2: Benchmark Comparison
     with tab2:
-        st.header("📈 Benchmark-Vergleich")
+        st.header("Benchmark-Vergleich")
 
         benchmark_data = st.session_state.benchmark_data
 
@@ -1522,7 +1522,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
     # TAB 3: Savings Plan
     with tab3:
-        st.header("💰 Sparplan-Simulation")
+        st.header("Sparplan-Simulation")
 
         savings_results = st.session_state.savings_results
 
@@ -1608,7 +1608,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
     # TAB 4: Withdrawal Simulation (Entnahme)
     with tab4:
-        st.header("🏦 Entnahme-Simulation (Ruhestandsplanung)")
+        st.header("Entnahme-Simulation (Ruhestandsplanung)")
 
         st.markdown("""
         **Wie lange reicht mein Geld?** Simulieren Sie, wie sich Ihr Vermögen entwickelt,
@@ -1712,7 +1712,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
         )
 
         # Steuer-Optionen
-        st.subheader("💶 Steuern bei Entnahme")
+        st.subheader("Steuern bei Entnahme")
 
         apply_withdrawal_tax = st.checkbox(
             "Kapitalertragssteuer berücksichtigen",
@@ -1742,19 +1742,19 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
         st.info(f"**Entnahmerate**: {withdrawal_rate:.1f}% p.a. (Die '4%-Regel' gilt als konservativ)")
 
         # Simulation Button
-        if st.button("🏦 Entnahme simulieren", use_container_width=True, key="run_withdrawal_sim"):
+        if st.button("Entnahme simulieren", use_container_width=True, key="run_withdrawal_sim"):
             # Scroll to top so user sees progress
             scroll_to_top()
 
             # Sofortige Benachrichtigung
-            st.toast("🏦 Simulation gestartet!", icon="🚀")
+            st.toast("Simulation gestartet!")
 
             # Prominenter Fortschrittscontainer
-            with st.status("🔄 **Entnahme-Simulation läuft...**", expanded=True) as status:
-                st.write("⏳ Initialisiere 5.000 Simulationen...")
+            with st.status("**Entnahme-Simulation läuft...**", expanded=True) as status:
+                st.write("Initialisiere 5.000 Simulationen...")
                 simulator = WithdrawalSimulator(n_simulations=5000)
 
-                st.write(f"📊 Simuliere {withdrawal_years} Jahre Entnahmephase...")
+                st.write(f"Simuliere {withdrawal_years} Jahre Entnahmephase...")
                 withdrawal_results = simulator.simulate(
                     initial_value=withdrawal_initial,
                     monthly_withdrawal=monthly_withdrawal,
@@ -1767,11 +1767,11 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                     apply_tax_to_gains=apply_withdrawal_tax
                 )
 
-                st.write("✅ Analyse abgeschlossen!")
+                st.write("Analyse abgeschlossen.")
                 st.session_state.withdrawal_results = withdrawal_results
-                status.update(label="✅ **Simulation abgeschlossen!**", state="complete", expanded=False)
+                status.update(label="**Simulation abgeschlossen.**", state="complete", expanded=False)
 
-            st.toast("✅ Ergebnisse bereit!", icon="✅")
+            st.toast("Ergebnisse bereit.")
 
         # Display results
         if st.session_state.withdrawal_results is not None:
@@ -1789,8 +1789,8 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
                 st.markdown(f"""
                 **Interpretation:**
-                - ✅ **{wr.success_rate*100:.1f}%** der Simulationen: Geld reicht
-                - ❌ **{wr.failure_rate*100:.1f}%** der Simulationen: Geld geht aus
+                - **{wr.success_rate*100:.1f}%** der Simulationen: Geld reicht
+                - **{wr.failure_rate*100:.1f}%** der Simulationen: Geld geht aus
                 """)
 
             with col2:
@@ -1816,7 +1816,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
             # Steuer-Übersicht (wenn aktiviert)
             if wr.tax_results is not None:
                 st.markdown("---")
-                st.subheader("💶 Steuerübersicht")
+                st.subheader("Steuerübersicht")
 
                 tax_cols = st.columns(4)
                 with tax_cols[0]:
@@ -1847,7 +1847,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
                 # Zusätzliche Info
                 st.info(
-                    f"📊 **Realisierte Gewinne (Ø)**: {format_currency(wr.tax_results.mean_realized_gains)} — "
+                    f"**Realisierte Gewinne (Ø):** {format_currency(wr.tax_results.mean_realized_gains)} — "
                     f"Davon {wr.tax_results.tax_rate:.1%} KESt = {format_currency(wr.tax_results.mean_taxes_paid)}"
                 )
 
@@ -1884,7 +1884,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
             # SWR Calculator
             st.markdown("---")
-            st.subheader("💡 Sichere Entnahmerate berechnen")
+            st.subheader("Sichere Entnahmerate berechnen")
 
             target_success_pct = st.slider(
                 "Gewünschte Erfolgsquote",
@@ -1903,14 +1903,14 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 scroll_to_top()
 
                 # Sofortige Benachrichtigung
-                st.toast("💡 SWR-Berechnung gestartet!", icon="🚀")
+                st.toast("SWR-Berechnung gestartet.")
 
                 # Prominenter Fortschrittscontainer
-                with st.status("🔄 **Berechne sichere Entnahmerate...**", expanded=True) as status:
-                    st.write("⏳ Initialisiere binäre Suche...")
+                with st.status("**Berechne sichere Entnahmerate...**", expanded=True) as status:
+                    st.write("Initialisiere binäre Suche...")
                     simulator = WithdrawalSimulator(n_simulations=3000)
 
-                    st.write(f"📊 Optimiere für {target_success*100:.0f}% Erfolgsrate...")
+                    st.write(f"Optimiere für {target_success*100:.0f}% Erfolgsrate...")
                     swr_result = simulator.find_safe_withdrawal_rate(
                         initial_value=withdrawal_initial,
                         expected_annual_return=withdrawal_return,
@@ -1923,7 +1923,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                         apply_tax_to_gains=apply_withdrawal_tax
                     )
 
-                    st.write("✅ Optimale Rate gefunden!")
+                    st.write("Optimale Rate gefunden.")
                     st.session_state.swr_result = swr_result
                     st.session_state.swr_params = {
                         'target_success': target_success,
@@ -1931,9 +1931,9 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                         'end_age': end_age,
                         'withdrawal_years': withdrawal_years
                     }
-                    status.update(label="✅ **Berechnung abgeschlossen!**", state="complete", expanded=False)
+                    status.update(label="**Berechnung abgeschlossen.**", state="complete", expanded=False)
 
-                st.toast("✅ Ergebnis bereit!", icon="✅")
+                st.toast("Ergebnis bereit.")
 
             # Display SWR result if available
             if 'swr_result' in st.session_state and st.session_state.swr_result is not None:
@@ -1942,15 +1942,15 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 st.success(f"""
                 **Ergebnis für {params['target_success']*100:.0f}% Erfolgswahrscheinlichkeit:**
 
-                - 👤 **Zeitraum**: Von {params['start_age']} bis {params['end_age']} Jahren ({params['withdrawal_years']} Jahre)
-                - 💰 **Sichere monatliche Entnahme**: {format_currency(swr['monthly_withdrawal'])}
-                - 📊 **Sichere Entnahmerate (SWR)**: {swr['withdrawal_rate_pct']:.2f}% p.a.
-                - 📅 **Jährliche Entnahme**: {format_currency(swr['annual_withdrawal'])}
+                - **Zeitraum:** Von {params['start_age']} bis {params['end_age']} Jahren ({params['withdrawal_years']} Jahre)
+                - **Sichere monatliche Entnahme:** {format_currency(swr['monthly_withdrawal'])}
+                - **Sichere Entnahmerate (SWR):** {swr['withdrawal_rate_pct']:.2f}% p.a.
+                - **Jährliche Entnahme:** {format_currency(swr['annual_withdrawal'])}
                 """)
 
     # TAB 5: Efficient Frontier
     with tab5:
-        st.header("🎯 Efficient Frontier - Portfolio-Optimierung")
+        st.header("Efficient Frontier – Portfolio-Optimierung")
 
         st.markdown("""
         Die **Efficient Frontier** (Effizienzgrenze) zeigt alle optimalen Portfolio-Kombinationen.
@@ -1980,7 +1980,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
             col1, col2, col3 = st.columns(3)
 
             with col1:
-                st.markdown("### 🔴 Aktuelles Portfolio")
+                st.markdown("### Aktuelles Portfolio")
                 st.metric("Erwartete Rendite", f"{current_return*100:.1f}%", help="Die geschätzte jährliche Rendite basierend auf historischen Daten.")
                 st.metric("Volatilität", f"{current_vol*100:.1f}%", help="Die jährliche Schwankungsbreite – je höher, desto riskanter.")
                 current_sharpe = (current_return - risk_free_rate) / current_vol if current_vol > 0 else 0
@@ -1992,7 +1992,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                         st.write(f"- {ticker}: {weight*100:.1f}%")
 
             with col2:
-                st.markdown("### ⭐ Max Sharpe Portfolio")
+                st.markdown("### Max Sharpe Portfolio")
                 st.caption("Beste Rendite pro Risikoeinheit")
                 max_sharpe = frontier_result.max_sharpe_portfolio
                 st.metric("Erwartete Rendite", f"{max_sharpe.expected_return*100:.1f}%")
@@ -2005,7 +2005,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                         st.write(f"- {ticker}: {weight*100:.1f}%")
 
             with col3:
-                st.markdown("### 💎 Min Volatilität Portfolio")
+                st.markdown("### Min Volatilität Portfolio")
                 st.caption("Geringstes Risiko")
                 min_vol = frontier_result.min_volatility_portfolio
                 st.metric("Erwartete Rendite", f"{min_vol.expected_return*100:.1f}%")
@@ -2041,7 +2041,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
             # Interpretation
             st.markdown("---")
-            with st.expander("📚 Interpretation der Efficient Frontier"):
+            with st.expander("Interpretation der Efficient Frontier"):
                 st.markdown("""
                 ### Was zeigt der Chart?
 
@@ -2069,7 +2069,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
     # TAB 6: Scenario Analysis
     with tab6:
-        st.header("🎭 Szenario-Analyse")
+        st.header("Szenario-Analyse")
 
         scenario_results = st.session_state.scenario_results
 
@@ -2139,7 +2139,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
     # TAB 7: Export
     with tab7:
-        st.header("📥 Export")
+        st.header("Export")
 
         col1, col2 = st.columns(2)
 
@@ -2166,7 +2166,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
             )
 
             st.download_button(
-                label="📊 Excel herunterladen",
+                label="Excel herunterladen",
                 data=excel_data,
                 file_name=f"portfolio_report_{datetime.now().strftime('%Y%m%d')}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -2185,7 +2185,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
             )
 
             st.download_button(
-                label="📄 CSV herunterladen",
+                label="CSV herunterladen",
                 data=csv_data,
                 file_name=f"portfolio_report_{datetime.now().strftime('%Y%m%d')}.csv",
                 mime="text/csv",
@@ -2195,7 +2195,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
         st.markdown("---")
 
         # Summary statistics
-        st.subheader("📋 Zusammenfassung")
+        st.subheader("Zusammenfassung")
 
         summary_data = {
             'Metrik': [
@@ -2228,7 +2228,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
 
     # TAB 8: Taxes & Costs
     with tab8:
-        st.header("💶 Steuern & Transaktionskosten")
+        st.header("Steuern & Transaktionskosten")
 
         tax_cost_results = st.session_state.get('tax_cost_results')
 
@@ -2272,7 +2272,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
             col1, col2 = st.columns(2)
 
             with col1:
-                st.subheader("📊 Detaillierte Aufschlüsselung")
+                st.subheader("Detaillierte Aufschlüsselung")
                 breakdown_data = {
                     'Metrik': [
                         'Anfangskapital',
@@ -2300,7 +2300,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 st.dataframe(pd.DataFrame(breakdown_data), use_container_width=True, hide_index=True)
 
             with col2:
-                st.subheader("📈 Perzentile nach Steuern")
+                st.subheader("Perzentile nach Steuern")
                 percentile_data = {
                     'Perzentil': ['5%', '25%', '50% (Median)', '75%', '95%'],
                     'Endwert': [
@@ -2316,7 +2316,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
             st.markdown("---")
 
             # Comparison chart
-            st.subheader("📊 Vergleich: Vor vs. Nach Steuern")
+            st.subheader("Vergleich: Vor vs. Nach Steuern")
             import plotly.graph_objects as go
 
             fig = go.Figure()
@@ -2352,7 +2352,7 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
             st.plotly_chart(fig, use_container_width=True)
 
             # Info section
-            with st.expander("ℹ️ Erklärungen"):
+            with st.expander("Erklärungen"):
                 st.markdown(f"""
                 ### Österreichische KESt (Kapitalertragssteuer)
                 Die **KESt** beträgt **{tax_cost_results.tax_rate * 100:.1f}%** auf realisierte Kapitalerträge.
@@ -2369,15 +2369,15 @@ if st.session_state.results is not None and st.session_state.portfolio is not No
                 """)
         else:
             if not enable_tax_costs:
-                st.info("👈 Aktivieren Sie 'Steuern & Transaktionskosten' in der Seitenleiste.")
+                st.info("Aktivieren Sie 'Steuern & Transaktionskosten' in der Seitenleiste.")
             elif rebalancing_option == "Kein Rebalancing (Buy & Hold)":
-                st.info("📊 Bei Buy & Hold entstehen keine realisierten Gewinne. Wählen Sie eine Rebalancing-Strategie.")
+                st.info("Bei Buy & Hold entstehen keine realisierten Gewinne. Wählen Sie eine Rebalancing-Strategie.")
             else:
                 st.warning("Keine Steuer-/Kostendaten verfügbar. Bitte Simulation erneut starten.")
 
 else:
     # Welcome message
-    st.info("👈 Konfigurieren Sie Ihr Portfolio in der Seitenleiste und klicken Sie auf 'Simulation starten'.")
+    st.info("Konfigurieren Sie Ihr Portfolio in der Seitenleiste und klicken Sie auf 'Simulation starten'.")
 
     col1, col2 = st.columns(2)
 
@@ -2395,22 +2395,22 @@ else:
         st.markdown("""
         ### Features:
 
-        - 📊 **Monte Carlo Simulation**: Tausende Szenarien
-        - 📈 **Benchmark-Vergleich**: vs. S&P 500/DAX
-        - 💰 **Sparplan**: Monatliche Einzahlungen
-        - 🏦 **Entnahme-Simulation**: Ruhestandsplanung
-        - 🎯 **Efficient Frontier**: Portfolio-Optimierung
-        - 🎭 **Szenarien**: Bull/Bear/Crash-Analyse
-        - 📥 **Export**: Excel & CSV Reports
+        - **Monte Carlo Simulation:** Tausende Szenarien
+        - **Benchmark-Vergleich:** vs. S&P 500/DAX
+        - **Sparplan:** Monatliche Einzahlungen
+        - **Entnahme-Simulation:** Ruhestandsplanung
+        - **Efficient Frontier:** Portfolio-Optimierung
+        - **Szenarien:** Bull/Bear/Crash-Analyse
+        - **Export:** Excel & CSV Reports
         """)
 
     # What's New / Updates Section
     st.markdown("---")
-    with st.expander("🆕 **Was ist neu?** - Aktuelle Updates", expanded=False):
+    with st.expander("**Was ist neu?** – Aktuelle Updates", expanded=False):
         st.markdown("""
         ### Version 1.3.0 (Februar 2025)
 
-        #### 🏠 NEU: REITs als Asset-Klasse
+        #### NEU: REITs als Asset-Klasse
         - **VNQ als neuer Benchmark**: Vanguard Real Estate ETF für Immobilien-Vergleiche
         - **Beliebte Ticker nach Asset-Klasse**: Neuer Expander mit Ticker-Übersicht (Aktien, Anleihen, Rohstoffe, REITs)
         - **Korrelationstabelle**: Typische Korrelationen zwischen Asset-Klassen
@@ -2424,7 +2424,7 @@ else:
 
         ### Version 1.2.0 (Februar 2025)
 
-        #### 💶 NEU: Steuern bei Entnahme
+        #### NEU: Steuern bei Entnahme
         - **KESt-Berechnung im Entnahmeplan**: Bei jeder Entnahme wird der Gewinnanteil versteuert
         - Neuer Abschnitt "Steuerübersicht" mit Brutto/Netto-Entnahmen
         - Effektiver Steuersatz über die gesamte Entnahmephase
@@ -2434,7 +2434,7 @@ else:
 
         ### Version 1.1.0 (Februar 2025)
 
-        #### 💶 Steuer- und Kostenrechner bei Rebalancing
+        #### Steuer- und Kostenrechner bei Rebalancing
         - **Österreichische KESt (27,5%)** auf realisierte Gewinne bei Rebalancing
         - **Transaktionskosten**: Prozentual (0,1%) oder Flat Fee (€5 pro Trade)
         - Neuer Tab "Steuern & Kosten" mit detaillierter Aufschlüsselung
@@ -2445,7 +2445,7 @@ else:
 
         ### Version 1.0.1 (Februar 2025)
 
-        #### 🔧 Verbesserungen
+        #### Verbesserungen
         - Hilfetexte für Rebalancing-Strategien hinzugefügt
         - VaR Konfidenzlevel-Erklärungen verbessert
         - Copyright-Hinweis im Header
@@ -2454,28 +2454,28 @@ else:
 
         ### Version 1.0.0 (Januar 2025)
 
-        #### 📊 Kern-Features
+        #### Kern-Features
         - Monte Carlo Simulation mit bis zu 50.000 Pfaden
         - Rebalancing-Strategien (Buy & Hold, Monatlich, Quartalsweise, Threshold)
         - VaR/CVaR Risikoanalyse mit konfigurierbarem Konfidenzlevel
         - Sharpe Ratio, Sortino Ratio, Max Drawdown
 
-        #### 📈 Benchmark & Analyse
+        #### Benchmark & Analyse
         - Benchmark-Vergleich (S&P 500, DAX, Euro Stoxx 50, etc.)
         - Beta, Alpha, Information Ratio
         - Efficient Frontier Portfolio-Optimierung
         - Korrelationsmatrix
 
-        #### 💰 Planungs-Tools
+        #### Planungs-Tools
         - **Sparplan-Simulation**: Monatliche Einzahlungen simulieren
         - **Entnahme-Simulation**: Ruhestandsplanung mit Inflationsanpassung
         - **Safe Withdrawal Rate Calculator**: Optimale Entnahmerate berechnen
 
-        #### 🎭 Szenarien & Stress-Tests
+        #### Szenarien & Stress-Tests
         - Bullenmarkt, Bärenmarkt, Crash, Stagflation
         - Hohe Volatilität Szenarien
 
-        #### 📱 UI/UX
+        #### UI/UX
         - Mobile-optimiert (iPhone/iPad)
         - Responsive Design
         - Deutschsprachige Oberfläche
@@ -2483,14 +2483,14 @@ else:
 
         ---
 
-        ### Geplante Features 🚀
-        - 📊 Backtesting
-        - 🔄 Eigene Szenarien erstellen
-        - 📄 PDF-Export
+        ### Geplante Features
+        - Backtesting
+        - Eigene Szenarien erstellen
+        - PDF-Export
         """)
 
     # Code Statistics Section
-    with st.expander("📊 **Code-Statistik** - Projektumfang", expanded=False):
+    with st.expander("**Code-Statistik** – Projektumfang", expanded=False):
         code_stats = get_code_statistics()
         st.markdown(f"""
         ### Projektumfang
@@ -2507,9 +2507,9 @@ else:
 
     # Ausführliche Einführung für Laien
     st.markdown("---")
-    st.header("📚 Einführung: Was ist Monte Carlo Simulation?")
+    st.header("Einführung: Was ist Monte Carlo Simulation?")
 
-    with st.expander("🎲 Was ist eine Monte Carlo Simulation?", expanded=True):
+    with st.expander("Was ist eine Monte Carlo Simulation?", expanded=True):
         st.markdown("""
         ### Die Idee dahinter
 
@@ -2539,7 +2539,7 @@ else:
         5. Am Ende haben wir 10.000 mögliche Endwerte – und können Statistiken darüber berechnen
         """)
 
-    with st.expander("📊 Eingaben erklärt: Was bedeuten die Felder?"):
+    with st.expander("Eingaben erklärt: Was bedeuten die Felder?"):
         st.markdown("""
         ### Portfolio-Einstellungen
 
@@ -2577,7 +2577,7 @@ else:
         | **Risikofreier Zinssatz** | Rendite einer "sicheren" Anlage (z.B. Staatsanleihen). Wird für Sharpe Ratio verwendet. |
         """)
 
-    with st.expander("📈 Ergebnisse erklärt: Was bedeuten die Kennzahlen?"):
+    with st.expander("Ergebnisse erklärt: Was bedeuten die Kennzahlen?"):
         st.markdown("""
         ### Basis-Kennzahlen
 
@@ -2612,7 +2612,7 @@ else:
         - **95. Perzentil**: "In 5% der Fälle war das Ergebnis besser als dieser Wert"
         """)
 
-    with st.expander("🎭 Szenarien erklärt"):
+    with st.expander("Szenarien erklärt"):
         st.markdown("""
         ### Was sind die Szenarien?
 
@@ -2634,7 +2634,7 @@ else:
         Ein Portfolio, das im Crash-Szenario 60% verliert, ist vielleicht zu riskant.
         """)
 
-    with st.expander("💰 Sparplan erklärt"):
+    with st.expander("Sparplan erklärt"):
         st.markdown("""
         ### Was ist ein Sparplan?
 
@@ -2655,7 +2655,7 @@ else:
         - **Visualisierung**: Rote Linie = Ihre Einzahlungen, Grüne Linie = erwarteter Wert
         """)
 
-    with st.expander("🏦 Entnahme-Simulation erklärt"):
+    with st.expander("Entnahme-Simulation erklärt"):
         st.markdown("""
         ### Wofür ist die Entnahme-Simulation?
 
@@ -2689,7 +2689,7 @@ else:
         Das erhält Ihre **Kaufkraft**, aber das Geld geht schneller aus.
         """)
 
-    with st.expander("🎯 Efficient Frontier erklärt"):
+    with st.expander("Efficient Frontier erklärt"):
         st.markdown("""
         ### Was ist die Efficient Frontier?
 
@@ -2715,8 +2715,8 @@ else:
 
         | Portfolio | Bedeutung | Für wen? |
         |-----------|-----------|----------|
-        | **Max Sharpe** ⭐ | Bestes Rendite/Risiko-Verhältnis | Die meisten Anleger |
-        | **Min Volatilität** 💎 | Geringstes Risiko | Konservative Anleger |
+        | **Max Sharpe** | Bestes Rendite/Risiko-Verhältnis | Die meisten Anleger |
+        | **Min Volatilität** | Geringstes Risiko | Konservative Anleger |
 
         ### Einschränkungen
 
@@ -2726,7 +2726,7 @@ else:
         - Extreme Gewichtungen (z.B. 90% in einer Aktie) sind praktisch problematisch
         """)
 
-    with st.expander("🏠 Asset-Klassen & REITs erklärt"):
+    with st.expander("Asset-Klassen & REITs erklärt"):
         st.markdown("""
         ### Was sind Asset-Klassen?
 
@@ -2743,7 +2743,7 @@ else:
 
         ---
 
-        ### 🏠 Was sind REITs?
+        ### Was sind REITs?
 
         **REIT** = Real Estate Investment Trust (Immobilien-Aktiengesellschaft)
 
@@ -2753,19 +2753,19 @@ else:
         - Ermöglichen Immobilieninvestment ohne selbst Immobilien zu kaufen
 
         **Vorteile von REITs:**
-        - 📈 **Inflationsschutz**: Mieten steigen meist mit der Inflation
-        - 💰 **Hohe Dividenden**: Typisch 3-5% Dividendenrendite
-        - 🔄 **Liquidität**: Täglich an der Börse handelbar (anders als echte Immobilien)
-        - 🌍 **Diversifikation**: Zugang zu vielen Immobilien weltweit
+        - **Inflationsschutz:** Mieten steigen meist mit der Inflation
+        - **Hohe Dividenden:** Typisch 3-5% Dividendenrendite
+        - **Liquidität:** Täglich an der Börse handelbar (anders als echte Immobilien)
+        - **Diversifikation:** Zugang zu vielen Immobilien weltweit
 
         **Risiken von REITs:**
-        - 📉 Zinsempfindlich (steigende Zinsen = fallende REIT-Kurse)
-        - 🏚️ Leerstandsrisiko bei Wirtschaftskrisen
-        - 💱 Währungsrisiko bei internationalen REITs
+        - Zinsempfindlich (steigende Zinsen = fallende REIT-Kurse)
+        - Leerstandsrisiko bei Wirtschaftskrisen
+        - Währungsrisiko bei internationalen REITs
 
         ---
 
-        ### 📊 Korrelationen verstehen
+        ### Korrelationen verstehen
 
         **Was bedeutet Korrelation?**
         - **+1.0** = Bewegen sich identisch (kein Diversifikationsvorteil)
@@ -2784,7 +2784,7 @@ else:
 
         ---
 
-        ### 💡 Beispiel-Portfolios mit REITs
+        ### Beispiel-Portfolios mit REITs
 
         **Konservativ (niedriges Risiko):**
         - 40% Aktien (VTI) + 40% Anleihen (BND) + 10% REITs (VNQ) + 10% Gold (GLD)
@@ -2798,7 +2798,7 @@ else:
         *Tipp: REITs eignen sich gut als 10-25% Portfolio-Anteil für Diversifikation und Inflationsschutz.*
         """)
 
-    with st.expander("⚠️ Wichtige Hinweise & Limitationen"):
+    with st.expander("Wichtige Hinweise & Limitationen"):
         st.markdown("""
         ### Was diese Simulation NICHT kann
 
