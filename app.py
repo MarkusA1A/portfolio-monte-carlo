@@ -345,6 +345,17 @@ st.markdown("""
         background: var(--color-surface) !important;
         border-right: 1px solid var(--color-border);
     }
+    [data-testid="stSidebar"] [data-testid="stImage"] {
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        margin-bottom: 0.25rem;
+    }
+    [data-testid="stSidebar"] [data-testid="stImage"] + [data-testid="caption"] {
+        font-family: var(--font-sans) !important;
+        font-size: 0.7rem;
+        color: var(--color-text-muted);
+        text-align: center;
+    }
     [data-testid="stSidebar"] h1,
     [data-testid="stSidebar"] h2,
     [data-testid="stSidebar"] h3 {
@@ -804,6 +815,7 @@ def estimate_memory_mb(num_simulations: int, time_horizon_days: int, num_assets:
 
 # Sidebar - Configuration
 with st.sidebar:
+    st.image("assets/casino_monte_carlo.jpg", caption="Casino de Monte-Carlo", use_container_width=True)
     st.header("Konfiguration")
 
     # Portfolio Load/Save Section
