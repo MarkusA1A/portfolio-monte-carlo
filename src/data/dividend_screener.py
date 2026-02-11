@@ -268,12 +268,18 @@ class DividendScreener:
         query: yf.EquityQuery,
         max_results: int
     ) -> list[dict]:
-        """Führt Screen-Query aus und gibt rohe Quote-Dicts zurück."""
+        """
+        Führt Screen-Query aus und gibt rohe Quote-Dicts zurück.
+
+        Sortiert nach Marktkapitalisierung absteigend, um große, etablierte
+        Dividendenzahler zu priorisieren. Die Yield-Filter greifen server-seitig,
+        sodass nur Aktien im gewünschten Rendite-Bereich zurückkommen.
+        """
         try:
             result = yf.screen(
                 query,
                 size=min(max_results, _YF_SCREEN_MAX),
-                sortField='forward_dividend_yield',
+                sortField='intradaymarketcap',
                 sortAsc=False
             )
             return result.get('quotes', [])
