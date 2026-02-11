@@ -1,6 +1,6 @@
 """
 Monte Carlo Portfolio Simulation - Streamlit Web Application
-Extended version with Benchmark, Savings Plan, Scenarios, and Export
+Extended version with Benchmark, Savings Plan, Scenarios, Dividend Screener, and Export
 """
 import streamlit as st
 import numpy as np
@@ -46,8 +46,11 @@ from src.visualization.charts import (
     plot_withdrawal_simulation,
     plot_depletion_histogram,
     plot_success_rate_gauge,
-    plot_optimal_weights
+    plot_optimal_weights,
+    plot_dividend_screener_scatter,
+    plot_dividend_history,
 )
+from src.data.dividend_screener import DividendScreener, ScreenerFilter, EXCHANGE_OPTIONS
 from src.export.reports import create_excel_report, create_csv_report
 import yfinance as yf
 import re
@@ -721,7 +724,8 @@ st.caption("von Markus O. Thalhamer")
 # Initialize session state
 for key in ['portfolio', 'results', 'loaded_config', 'benchmark_data',
             'savings_results', 'scenario_results', 'efficient_frontier', 'withdrawal_results',
-            'swr_result', 'swr_params']:
+            'swr_result', 'swr_params', 'screener_results', 'screener_inject_tickers',
+            'screener_instance']:
     if key not in st.session_state:
         st.session_state[key] = None
 
@@ -840,7 +844,12 @@ with st.sidebar:
     # Portfolio Settings
     st.subheader("Portfolio")
 
-    default_tickers = ", ".join(loaded["tickers"]) if loaded else "AAPL, MSFT, GOOGL, AMZN"
+    # Check for screener-injected tickers
+    if st.session_state.screener_inject_tickers:
+        default_tickers = st.session_state.screener_inject_tickers
+        st.session_state.screener_inject_tickers = None
+    else:
+        default_tickers = ", ".join(loaded["tickers"]) if loaded else "AAPL, MSFT, GOOGL, AMZN"
     tickers_input = st.text_input(
         "Ticker-Symbole oder ISINs (kommasepariert)",
         value=default_tickers,
@@ -877,6 +886,65 @@ with st.sidebar:
         - `SGOV` 0-3 Month Treasury, `BIL` 1-3 Month T-Bill
         """)
         st.info("**Tipp:** REITs + Aktien + Anleihen = klassisches diversifiziertes Portfolio")
+
+    # Dividend Screener Section
+    st.subheader("Dividenden-Screener")
+    with st.expander("Dividenden-Aktien suchen", expanded=False):
+        st.caption("Findet Aktien mit nachhaltigen, wachsenden Dividenden")
+
+        scr_col1, scr_col2 = st.columns(2)
+        with scr_col1:
+            scr_min_yield = st.number_input(
+                "Min. Rendite (%)",
+                min_value=0.0, max_value=20.0, value=2.0, step=0.5,
+                key="scr_min_yield"
+            )
+        with scr_col2:
+            scr_max_yield = st.number_input(
+                "Max. Rendite (%)",
+                min_value=0.0, max_value=30.0, value=10.0, step=0.5,
+                key="scr_max_yield",
+                help="Sehr hohe Renditen (>8%) können auf Probleme hindeuten"
+            )
+
+        scr_min_years = st.slider(
+            "Min. Jahre Dividendenwachstum",
+            min_value=0, max_value=50, value=5,
+            key="scr_min_years",
+            help="Dividend Aristocrats: 25+ Jahre"
+        )
+
+        scr_max_payout = st.slider(
+            "Max. Ausschüttungsquote (%)",
+            min_value=10, max_value=100, value=70,
+            key="scr_max_payout",
+            help="< 70% gilt als nachhaltig"
+        )
+
+        scr_exchange_label = st.selectbox(
+            "Börse",
+            options=list(EXCHANGE_OPTIONS.keys()),
+            index=0,
+            key="scr_exchange"
+        )
+        scr_exchange = EXCHANGE_OPTIONS[scr_exchange_label]
+
+        scr_max_results = st.select_slider(
+            "Anzahl Ergebnisse",
+            options=[10, 25, 50],
+            value=25,
+            key="scr_max_results"
+        )
+
+        if scr_min_yield >= scr_max_yield:
+            st.warning("Min. Rendite muss kleiner als Max. Rendite sein.")
+
+        run_screener = st.button(
+            "Screener starten",
+            key="run_screener_btn",
+            use_container_width=True,
+            disabled=scr_min_yield >= scr_max_yield
+        )
 
     # Process inputs (handle both tickers and ISINs)
     raw_inputs = [t.strip() for t in tickers_input.split(",") if t.strip()]
@@ -1155,6 +1223,147 @@ with st.sidebar:
             mime="application/json",
             use_container_width=True
         )
+
+# Dividend Screener Execution
+if run_screener:
+    with st.status("**Dividenden-Screener läuft...**", expanded=True) as status:
+        st.write("Suche nach Dividenden-Aktien...")
+
+        if st.session_state.screener_instance is None:
+            st.session_state.screener_instance = DividendScreener()
+        screener = st.session_state.screener_instance
+        filters = ScreenerFilter(
+            min_dividend_yield=scr_min_yield,
+            max_dividend_yield=scr_max_yield,
+            max_payout_ratio=scr_max_payout / 100,
+            min_consecutive_years=scr_min_years,
+            exchange=scr_exchange,
+            max_results=scr_max_results,
+        )
+
+        def screener_progress(pct, text):
+            st.write(text)
+
+        try:
+            scr_results = screener.screen(filters, progress_callback=screener_progress)
+            st.session_state.screener_results = scr_results
+            status.update(
+                label=f"**{len(scr_results)} Dividenden-Aktien gefunden.**",
+                state="complete", expanded=False
+            )
+        except Exception as e:
+            st.error(f"Screener-Fehler: {e}")
+            st.session_state.screener_results = None
+
+# Display Screener Results
+if st.session_state.screener_results:
+    scr_data = st.session_state.screener_results
+
+    st.header("Dividenden-Screener Ergebnisse")
+
+    # Summary metrics
+    cols = st.columns(4)
+    with cols[0]:
+        st.metric("Gefundene Aktien", len(scr_data))
+    with cols[1]:
+        avg_yield = np.mean([m.dividend_yield for m in scr_data])
+        st.metric("Ø Rendite", f"{avg_yield:.1f}%")
+    with cols[2]:
+        avg_score = np.mean([m.quality_score for m in scr_data])
+        st.metric("Ø Qualitätsscore", f"{avg_score:.0f}/100")
+    with cols[3]:
+        avg_years = np.mean([m.consecutive_years_increase for m in scr_data])
+        st.metric("Ø Jahre Steigerung", f"{avg_years:.0f}")
+
+    # Scatter plot
+    fig_scatter = plot_dividend_screener_scatter(scr_data)
+    st.plotly_chart(fig_scatter, use_container_width=True)
+
+    # Results table
+    st.subheader("Ergebnisse")
+
+    df_data = []
+    for m in scr_data:
+        df_data.append({
+            'Ticker': m.ticker,
+            'Name': m.name[:30],
+            'Sektor': m.sector,
+            'Rendite (%)': m.dividend_yield,
+            'Wachstum 5J (%)': m.dividend_growth_rate_5y,
+            'Jahre Steig.': m.consecutive_years_increase,
+            'Aussch.quote': m.payout_ratio,
+            'ROE': m.return_on_equity,
+            'Score': m.quality_score,
+        })
+
+    df_screener = pd.DataFrame(df_data)
+    st.dataframe(
+        df_screener.style.format({
+            'Rendite (%)': '{:.2f}',
+            'Wachstum 5J (%)': '{:.1f}',
+            'Aussch.quote': '{:.0%}',
+            'ROE': '{:.0%}',
+            'Score': '{:.0f}',
+        }).background_gradient(
+            subset=['Score'], cmap='RdYlGn', vmin=0, vmax=100
+        ),
+        use_container_width=True
+    )
+
+    # Selection and portfolio integration
+    ticker_name_map = {m.ticker: m.name for m in scr_data}
+    selected_tickers = st.multiselect(
+        "Aktien zum Portfolio hinzufügen:",
+        options=[m.ticker for m in scr_data],
+        format_func=lambda t: f"{t} – {ticker_name_map.get(t, t)}",
+        key="screener_multiselect"
+    )
+
+    if selected_tickers:
+        if st.button(
+            f"{len(selected_tickers)} Aktie(n) zum Portfolio hinzufügen",
+            type="primary",
+            key="add_screener_to_portfolio"
+        ):
+            current = set(tickers)
+            new_tickers = [t for t in selected_tickers if t not in current]
+            if new_tickers:
+                all_tickers = tickers + new_tickers
+                st.session_state.screener_inject_tickers = ", ".join(all_tickers)
+                st.rerun()
+            else:
+                st.info("Alle ausgewählten Aktien sind bereits im Portfolio.")
+
+    # Dividend history detail chart
+    st.subheader("Dividenden-Historie")
+    detail_ticker = st.selectbox(
+        "Aktie für Detailansicht auswählen",
+        options=[m.ticker for m in scr_data],
+        format_func=lambda t: f"{t} – {ticker_name_map.get(t, t)}",
+        key="screener_detail_select"
+    )
+
+    if detail_ticker:
+        # Versuche gespeicherte Historie aus Screener-Ergebnissen zu nutzen
+        detail_metrics = next((m for m in scr_data if m.ticker == detail_ticker), None)
+        div_data = detail_metrics.dividend_history if detail_metrics else None
+
+        if div_data is None or div_data.empty:
+            with st.spinner(f"Lade Dividenden-Historie für {detail_ticker}..."):
+                try:
+                    div_data = yf.Ticker(detail_ticker).dividends
+                except Exception as e:
+                    st.warning(f"Fehler beim Laden der Historie: {e}")
+                    div_data = None
+
+        if div_data is not None and not div_data.empty:
+            detail_name = ticker_name_map.get(detail_ticker, detail_ticker)
+            fig_hist = plot_dividend_history(detail_ticker, div_data, detail_name)
+            st.plotly_chart(fig_hist, use_container_width=True)
+        else:
+            st.info("Keine Dividenden-Historie verfügbar.")
+
+    st.markdown("---")
 
 # Main content
 if run_simulation:
@@ -2427,6 +2636,7 @@ else:
         ### Features:
 
         - **Monte Carlo Simulation:** Tausende Szenarien
+        - **Dividenden-Screener:** Nachhaltige Dividenden-Aktien finden
         - **Benchmark-Vergleich:** vs. S&P 500/DAX
         - **Sparplan:** Monatliche Einzahlungen
         - **Entnahme-Simulation:** Ruhestandsplanung
@@ -2439,6 +2649,26 @@ else:
     st.markdown("---")
     with st.expander("**Was ist neu?** – Aktuelle Updates", expanded=False):
         st.markdown("""
+        ### Version 1.4.0 (Februar 2025)
+
+        #### NEU: Dividenden-Screener
+        - **Dividenden-Aktien suchen**: Findet Aktien mit nachhaltigen, wachsenden Dividenden
+        - **Qualitätsscore 0-100**: Bewertet Aktien nach konsekutiven Steigerungsjahren, Wachstumsrate, Ausschüttungsquote, ROE und Verschuldungsgrad
+        - **Server-seitiges Screening**: Nutzt yfinance EquityQuery für schnelles Filtern nach Börse, Rendite und Marktkapitalisierung
+        - **Dividenden-Historie**: Jährliches Balkendiagramm mit Trendlinie und Steigerungs-/Rückgangs-Farbcodierung
+        - **Portfolio-Integration**: Gefundene Aktien direkt ins Portfolio übernehmen
+        - **Scatter-Plot**: Rendite vs. Qualitätsscore mit Bubble-Size nach Marktkapitalisierung
+        - **Filter**: Min/Max Rendite, Min. Jahre Dividendenwachstum, Max. Ausschüttungsquote, Börsenauswahl (NYSE, NASDAQ, XETRA, LSE, SIX)
+
+        #### Hinweise & Limitierungen des Dividenden-Screeners
+        - **Qualitätsscore**: Der Score ist eine vereinfachte Eigenentwicklung und kein wissenschaftlich validiertes Modell. Professionelle Tools (Morningstar, Bloomberg) nutzen komplexere Bewertungsmethoden wie den Piotroski F-Score
+        - **Datenqualität**: Die Daten stammen von Yahoo Finance und können Lücken oder Ungenauigkeiten enthalten (insbesondere Payout Ratios und Dividenden-Historien)
+        - **Keine Branchenbereinigung**: Der Score behandelt alle Sektoren gleich – ein Versorger mit 70% Ausschüttungsquote ist branchentypisch, bei Tech wäre es ein Warnsignal
+        - **Kein Ersatz für Research**: Der Screener ist ein Startpunkt zur Ideenfindung, kein Ersatz für fundamentale Analyse oder professionelle Beratung
+        - **Performance**: Bei vielen Ergebnissen (>25) kann die Detailabfrage mehrere Sekunden dauern, da jede Aktie einzeln bei Yahoo Finance abgefragt wird
+
+        ---
+
         ### Version 1.3.0 (Februar 2025)
 
         #### NEU: REITs als Asset-Klasse

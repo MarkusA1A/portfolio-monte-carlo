@@ -882,3 +882,161 @@ def plot_optimal_weights(
     ))
 
     return fig
+
+
+def plot_dividend_screener_scatter(
+    metrics_list: list,
+    x_field: str = 'dividend_yield',
+    y_field: str = 'quality_score',
+) -> go.Figure:
+    """
+    Scatter-Plot der gescreenten Dividenden-Aktien: Rendite vs Qualitätsscore.
+
+    Args:
+        metrics_list: Liste von DividendMetrics Objekten
+        x_field: Feld für x-Achse
+        y_field: Feld für y-Achse
+
+    Returns:
+        Plotly Figure
+    """
+    fig = go.Figure()
+
+    if not metrics_list:
+        fig.update_layout(**_base_layout(title='Dividenden-Screener: Keine Ergebnisse'))
+        return fig
+
+    x_vals = [getattr(m, x_field, 0) for m in metrics_list]
+    y_vals = [getattr(m, y_field, 0) for m in metrics_list]
+    labels = [m.ticker for m in metrics_list]
+    years = [m.consecutive_years_increase for m in metrics_list]
+    sizes = [max(8, min(30, m.market_cap / 1e10)) for m in metrics_list]
+
+    hover_texts = []
+    for m in metrics_list:
+        hover_texts.append(
+            f"<b>{m.ticker}</b> – {m.name}<br>"
+            f"Rendite: {m.dividend_yield:.2f}%<br>"
+            f"Qualitätsscore: {m.quality_score:.0f}/100<br>"
+            f"Jahre Steigerung: {m.consecutive_years_increase}<br>"
+            f"Wachstum 5J: {m.dividend_growth_rate_5y:.1f}%<br>"
+            f"Ausschüttungsquote: {m.payout_ratio:.0%}<br>"
+            f"ROE: {m.return_on_equity:.0%}<br>"
+            f"Sektor: {m.sector}"
+        )
+
+    fig.add_trace(go.Scatter(
+        x=x_vals,
+        y=y_vals,
+        mode='markers+text',
+        text=labels,
+        textposition='top center',
+        textfont=dict(family=FONT_MONO, size=9, color=COLORS['text_muted']),
+        marker=dict(
+            size=sizes,
+            color=years,
+            colorscale='Viridis',
+            showscale=True,
+            colorbar=dict(
+                title=dict(text='Jahre<br>Steigerung', font=dict(size=10)),
+                tickfont=dict(size=10),
+            ),
+            line=dict(width=1, color='rgba(0,0,0,0.1)'),
+        ),
+        hovertext=hover_texts,
+        hoverinfo='text',
+    ))
+
+    fig.update_layout(**_base_layout(
+        title='Dividenden-Screener: Rendite vs Qualität',
+        xaxis_title='Dividendenrendite (%)',
+        yaxis_title='Qualitätsscore (0-100)',
+        xaxis_ticksuffix='%',
+        showlegend=False,
+    ))
+
+    return fig
+
+
+def plot_dividend_history(
+    ticker: str,
+    dividends: 'pd.Series',
+    name: str = ""
+) -> go.Figure:
+    """
+    Balkendiagramm der jährlichen Dividendenausschüttungen mit Trendlinie.
+
+    Args:
+        ticker: Aktien-Ticker
+        dividends: Dividenden-Zeitserie (pandas Series mit Datetime-Index)
+        name: Optionaler Aktienname für den Titel
+
+    Returns:
+        Plotly Figure
+    """
+    fig = go.Figure()
+
+    if dividends.empty:
+        fig.update_layout(**_base_layout(
+            title=f'{ticker}: Keine Dividenden-Historie verfügbar'
+        ))
+        return fig
+
+    # Gruppiere nach Jahr (aktuelles unvollständiges Jahr ausschließen)
+    from src.data.dividend_screener import DividendScreener
+    annual = DividendScreener._get_complete_annual_dividends(dividends)
+    if annual.empty:
+        fig.update_layout(**_base_layout(
+            title=f'{ticker}: Keine vollständigen Jahresdaten verfügbar'
+        ))
+        return fig
+    years = list(annual.index)
+    values = list(annual.values)
+
+    # Barplot der jährlichen Dividenden
+    colors = []
+    for i in range(len(values)):
+        if i == 0:
+            colors.append(COLORS['accent'])
+        elif values[i] > values[i - 1]:
+            colors.append(COLORS['success'])
+        elif values[i] < values[i - 1]:
+            colors.append(COLORS['danger'])
+        else:
+            colors.append(COLORS['warning'])
+
+    fig.add_trace(go.Bar(
+        x=years,
+        y=values,
+        marker_color=colors,
+        marker_line_width=0,
+        text=[f'{v:.2f}' for v in values],
+        textposition='outside',
+        textfont=dict(family=FONT_MONO, size=10, color=COLORS['text_muted']),
+        name='Jährliche Dividende',
+        hovertemplate='%{x}: %{y:.2f}<extra></extra>',
+    ))
+
+    # Trendlinie
+    if len(years) >= 3:
+        x_num = np.arange(len(years))
+        z = np.polyfit(x_num, values, 1)
+        trend = np.polyval(z, x_num)
+        fig.add_trace(go.Scatter(
+            x=years,
+            y=trend,
+            mode='lines',
+            line=dict(color=COLORS['accent'], width=2, dash='dash'),
+            name='Trend',
+            hoverinfo='skip',
+        ))
+
+    title = f'{name} ({ticker})' if name else ticker
+    fig.update_layout(**_base_layout(
+        title=f'Dividenden-Historie: {title}',
+        xaxis_title='Jahr',
+        yaxis_title='Dividende pro Aktie',
+        showlegend=True,
+    ))
+
+    return fig
