@@ -892,7 +892,7 @@ with st.sidebar:
 
     # Dividend Screener Section
     st.subheader("Dividenden-Screener")
-    with st.expander("Dividenden-Aktien suchen", expanded=False):
+    with st.form("screener_form"):
         st.caption("Findet Aktien mit nachhaltigen, wachsenden Dividenden")
 
         scr_row1_c1, scr_row1_c2 = st.columns(2)
@@ -907,7 +907,6 @@ with st.sidebar:
                 "Max. Rendite (%)",
                 min_value=0.0, max_value=30.0, value=10.0, step=0.5,
                 key="scr_max_yield",
-                help="Sehr hohe Renditen (>8%) können auf Probleme hindeuten"
             )
 
         scr_row2_c1, scr_row2_c2 = st.columns(2)
@@ -916,14 +915,12 @@ with st.sidebar:
                 "Min. Jahre Wachstum",
                 min_value=0, max_value=50, value=5,
                 key="scr_min_years",
-                help="Dividend Aristocrats: 25+ Jahre"
             )
         with scr_row2_c2:
             scr_max_payout = st.slider(
                 "Max. Payout (%)",
                 min_value=10, max_value=100, value=70,
                 key="scr_max_payout",
-                help="< 70% gilt als nachhaltig"
             )
 
         scr_row3_c1, scr_row3_c2 = st.columns(2)
@@ -943,14 +940,9 @@ with st.sidebar:
                 key="scr_max_results"
             )
 
-        if scr_min_yield >= scr_max_yield:
-            st.warning("Min. Rendite muss kleiner als Max. Rendite sein.")
-
-        run_screener = st.button(
+        run_screener = st.form_submit_button(
             "Screener starten",
-            key="run_screener_btn",
             use_container_width=True,
-            disabled=scr_min_yield >= scr_max_yield
         )
 
     # Process inputs (handle both tickers and ISINs)
@@ -1232,7 +1224,9 @@ with st.sidebar:
         )
 
 # Dividend Screener Execution
-if run_screener:
+if run_screener and scr_min_yield >= scr_max_yield:
+    st.warning("Min. Rendite muss kleiner als Max. Rendite sein.")
+elif run_screener:
     with st.status("**Dividenden-Screener läuft...**", expanded=True) as status:
         progress_bar = st.progress(0)
         progress_text = st.empty()
