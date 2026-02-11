@@ -3109,7 +3109,7 @@ st.markdown("""
     <p><strong>Monte Carlo Portfolio Simulation</strong></p>
     <p>Erdacht von <strong>Markus O. Thalhamer</strong>
     (<a href="mailto:mthalhamer@thalhamer.com">mthalhamer@thalhamer.com</a>)
-    mit Unterstützung von <strong>Claude</strong></p>
+    mit Unterstützung von <strong><a href="https://claude.ai" target="_blank">Claude</a></strong></p>
     <p>Daten von Yahoo Finance&ensp;·&ensp;Erstellt mit Streamlit&ensp;·&ensp;Charts mit Plotly</p>
 </div>
 """, unsafe_allow_html=True)
