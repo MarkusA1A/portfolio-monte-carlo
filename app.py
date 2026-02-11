@@ -717,7 +717,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown("""
-<h1 style="margin-bottom: 0.1rem;">Monte Carlo Portfolio Simulation <span class="app-badge">v1.3</span></h1>
+<h1 style="margin-bottom: 0.1rem;">Monte Carlo Portfolio Simulation <span class="app-badge">v1.4</span></h1>
 """, unsafe_allow_html=True)
 st.caption("von Markus O. Thalhamer")
 
