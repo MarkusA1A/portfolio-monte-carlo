@@ -844,15 +844,17 @@ with st.sidebar:
     # Portfolio Settings
     st.subheader("Portfolio")
 
-    # Check for screener-injected tickers
+    # Check for screener-injected tickers (set session_state key directly so it persists across reruns)
+    _TICKER_INPUT_KEY = "portfolio_tickers_input"
     if st.session_state.screener_inject_tickers:
-        default_tickers = st.session_state.screener_inject_tickers
+        st.session_state[_TICKER_INPUT_KEY] = st.session_state.screener_inject_tickers
         st.session_state.screener_inject_tickers = None
-    else:
-        default_tickers = ", ".join(loaded["tickers"]) if loaded else "AAPL, MSFT, GOOGL, AMZN"
+
+    default_tickers = ", ".join(loaded["tickers"]) if loaded else "AAPL, MSFT, GOOGL, AMZN"
     tickers_input = st.text_input(
         "Ticker-Symbole oder ISINs (kommasepariert)",
         value=default_tickers,
+        key=_TICKER_INPUT_KEY,
         help="z.B. AAPL, MSFT, GOOGL oder ISINs wie US0378331005, DE0007164600"
     )
 
