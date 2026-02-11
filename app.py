@@ -144,45 +144,37 @@ def format_number(value: float, decimals: int = 0) -> str:
         return f"{value:,.{decimals}f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
+def _run_js(code: str):
+    """Execute JavaScript via st.components.v1.html (reliable across Streamlit versions)."""
+    import streamlit.components.v1 as components
+    components.html(f"<script>{code}</script>", height=0, width=0)
+
+
 def scroll_to_top():
-    """Inject JavaScript to scroll to top of the main content area."""
-    js = """
-    <script>
-        // Scroll the main content area to top
-        const mainContent = window.parent.document.querySelector('section.main');
-        if (mainContent) {
-            mainContent.scrollTo({top: 0, behavior: 'smooth'});
-        }
-        // Also scroll the window itself
+    """Scroll to top of the main content area."""
+    _run_js("""
+        var main = window.parent.document.querySelector('section.main');
+        if (main) main.scrollTo({top: 0, behavior: 'smooth'});
         window.parent.scrollTo({top: 0, behavior: 'smooth'});
-    </script>
-    """
-    st.markdown(js, unsafe_allow_html=True)
+    """)
 
 
 def collapse_sidebar():
     """Collapse sidebar and scroll to top so user sees the main content."""
-    js = """
-    <script>
-        (function() {
-            var doc = window.parent.document;
-            // Collapse sidebar (works on mobile and desktop)
-            var sidebar = doc.querySelector('[data-testid="stSidebar"]');
-            if (sidebar) {
-                sidebar.setAttribute('aria-expanded', 'false');
-            }
-            // Click the collapse button if present
-            var btn = doc.querySelector('[data-testid="stSidebarCollapseButton"]')
-                || doc.querySelector('[data-testid="stSidebar"] button[kind="headerNoPadding"]');
-            if (btn) btn.click();
-            // Scroll main content to top
-            var main = doc.querySelector('section.main');
-            if (main) main.scrollTo({top: 0, behavior: 'smooth'});
-            window.parent.scrollTo({top: 0, behavior: 'smooth'});
-        })();
-    </script>
-    """
-    st.markdown(js, unsafe_allow_html=True)
+    _run_js("""
+        var doc = window.parent.document;
+        // Collapse sidebar
+        var sidebar = doc.querySelector('[data-testid="stSidebar"]');
+        if (sidebar) sidebar.setAttribute('aria-expanded', 'false');
+        // Try multiple selectors for the collapse button
+        var btn = doc.querySelector('[data-testid="stSidebarCollapseButton"]')
+            || doc.querySelector('button[data-testid="baseButton-headerNoPadding"]');
+        if (btn) btn.click();
+        // Scroll to top
+        var main = doc.querySelector('section.main');
+        if (main) main.scrollTo({top: 0, behavior: 'smooth'});
+        window.parent.scrollTo({top: 0, behavior: 'smooth'});
+    """)
 
 
 def parse_german_number(text: str, default: int = 0) -> int:
