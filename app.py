@@ -1234,7 +1234,8 @@ with st.sidebar:
 # Dividend Screener Execution
 if run_screener:
     with st.status("**Dividenden-Screener läuft...**", expanded=True) as status:
-        st.write("Suche nach Dividenden-Aktien...")
+        progress_bar = st.progress(0)
+        progress_text = st.empty()
 
         if st.session_state.screener_instance is None:
             st.session_state.screener_instance = DividendScreener()
@@ -1249,16 +1250,21 @@ if run_screener:
         )
 
         def screener_progress(pct, text):
-            st.write(text)
+            progress_bar.progress(min(pct, 100) / 100)
+            progress_text.caption(text)
 
         try:
             scr_results = screener.screen(filters, progress_callback=screener_progress)
             st.session_state.screener_results = scr_results
+            progress_bar.empty()
+            progress_text.empty()
             status.update(
                 label=f"**{len(scr_results)} Dividenden-Aktien gefunden.**",
                 state="complete", expanded=False
             )
         except Exception as e:
+            progress_bar.empty()
+            progress_text.empty()
             st.error(f"Screener-Fehler: {e}")
             st.session_state.screener_results = None
 
