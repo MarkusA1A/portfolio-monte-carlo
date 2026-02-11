@@ -1,10 +1,13 @@
 """
 Tests für den Dividend Screener mit gemocktem yfinance.
 """
+from datetime import date
+
 import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 
 from src.data.dividend_screener import (
     DividendScreener,
@@ -12,6 +15,7 @@ from src.data.dividend_screener import (
     ScreenerFilter,
     EXCHANGE_OPTIONS,
 )
+from src.visualization.charts import plot_dividend_screener_scatter, plot_dividend_history
 
 
 def _make_metrics(ticker='TEST', **overrides):
@@ -559,7 +563,6 @@ class TestPartialYearExclusion:
 
     def test_current_year_excluded_from_consecutive(self):
         """Das aktuelle (unvollständige) Jahr darf nicht in die Berechnung einfließen."""
-        from datetime import date
         screener = DividendScreener()
         current_year = date.today().year
         # Aufsteigend bis Vorjahr, dann abfallend im aktuellen Jahr (unvollständig)
@@ -578,7 +581,6 @@ class TestPartialYearExclusion:
 
     def test_current_year_excluded_from_cagr(self):
         """CAGR darf nicht durch unvollständiges aktuelles Jahr verfälscht werden."""
-        from datetime import date
         screener = DividendScreener()
         current_year = date.today().year
         dates = pd.to_datetime([
@@ -597,7 +599,6 @@ class TestPartialYearExclusion:
 
     def test_get_complete_annual_dividends_excludes_current_year(self):
         """_get_complete_annual_dividends muss aktuelles Jahr ausschließen."""
-        from datetime import date
         current_year = date.today().year
         dates = pd.to_datetime([
             f'{current_year-2}-06-15',
@@ -638,32 +639,76 @@ class TestSingleConditionQuery:
         assert query is not None
 
 
+class TestPreferredShareFilter:
+    """Tests für das Herausfiltern von Preferred Shares."""
+
+    def test_detects_preferred_share_with_letter(self):
+        assert DividendScreener._is_preferred_share('NLY-PF') is True
+        assert DividendScreener._is_preferred_share('MS-PA') is True
+        assert DividendScreener._is_preferred_share('SPG-PJ') is True
+
+    def test_detects_preferred_share_without_letter(self):
+        assert DividendScreener._is_preferred_share('AXIA-P') is True
+
+    def test_normal_tickers_not_filtered(self):
+        assert DividendScreener._is_preferred_share('AAPL') is False
+        assert DividendScreener._is_preferred_share('JPM') is False
+        assert DividendScreener._is_preferred_share('T') is False
+        assert DividendScreener._is_preferred_share('MPLX') is False
+
+    def test_empty_symbol(self):
+        assert DividendScreener._is_preferred_share('') is False
+
+    def test_ticker_with_p_not_at_end(self):
+        """Ticker wie PG oder PFE dürfen nicht gefiltert werden."""
+        assert DividendScreener._is_preferred_share('PG') is False
+        assert DividendScreener._is_preferred_share('PFE') is False
+        assert DividendScreener._is_preferred_share('EPD') is False
+
+    @patch('src.data.dividend_screener.yf.screen')
+    @patch('src.data.dividend_screener.yf.Ticker')
+    def test_preferred_shares_excluded_from_screen(self, mock_ticker_cls, mock_screen):
+        """Preferred Shares werden vor Enrichment herausgefiltert."""
+        mock_screen.return_value = {
+            'quotes': [
+                {'symbol': 'JNJ', 'dividendYield': 3.0, 'currency': 'USD'},
+                {'symbol': 'NLY-PF', 'dividendYield': 8.0, 'currency': 'USD'},
+                {'symbol': 'MS-PA', 'dividendYield': 6.0, 'currency': 'USD'},
+            ],
+            'total': 3
+        }
+        mock_ticker_instance = MagicMock()
+        mock_ticker_instance.info = {}
+        mock_ticker_instance.dividends = pd.Series(dtype=float)
+        mock_ticker_cls.return_value = mock_ticker_instance
+
+        screener = DividendScreener()
+        results = screener.screen(ScreenerFilter(min_consecutive_years=0))
+
+        tickers = [r.ticker for r in results]
+        assert 'JNJ' in tickers
+        assert 'NLY-PF' not in tickers
+        assert 'MS-PA' not in tickers
+
+
 class TestDividendCharts:
     """Tests für die Dividenden-Chart-Funktionen."""
 
     def test_scatter_empty_list(self):
-        from src.visualization.charts import plot_dividend_screener_scatter
-        import plotly.graph_objects as go
         fig = plot_dividend_screener_scatter([])
         assert isinstance(fig, go.Figure)
 
     def test_scatter_with_metrics(self):
-        from src.visualization.charts import plot_dividend_screener_scatter
-        import plotly.graph_objects as go
         metrics = [_make_metrics(quality_score=70.0)]
         fig = plot_dividend_screener_scatter(metrics)
         assert isinstance(fig, go.Figure)
         assert len(fig.data) > 0
 
     def test_history_empty_series(self):
-        from src.visualization.charts import plot_dividend_history
-        import plotly.graph_objects as go
         fig = plot_dividend_history('TEST', pd.Series(dtype=float), 'Test Corp')
         assert isinstance(fig, go.Figure)
 
     def test_history_with_data(self):
-        from src.visualization.charts import plot_dividend_history
-        import plotly.graph_objects as go
         dates = pd.to_datetime(['2020-06-15', '2021-06-15', '2022-06-15', '2023-06-15'])
         dividends = pd.Series([2.0, 2.2, 2.4, 2.6], index=dates)
         fig = plot_dividend_history('TEST', dividends, 'Test Corp')
@@ -672,9 +717,6 @@ class TestDividendCharts:
 
     def test_history_excludes_current_year(self):
         """Chart sollte das aktuelle unvollständige Jahr nicht anzeigen."""
-        from src.visualization.charts import plot_dividend_history
-        from datetime import date
-        import plotly.graph_objects as go
         current_year = date.today().year
         dates = pd.to_datetime([
             f'{current_year-2}-06-15',
@@ -787,3 +829,123 @@ class TestErrorLogging:
         with patch('src.data.dividend_screener.yf.screen', side_effect=Exception("API down")):
             result = screener._fetch_screen_results(MagicMock(), 25)
             assert result == []
+
+
+class TestNaNHandling:
+    """Tests für NaN-Werte aus der yfinance API."""
+
+    def test_safe_handles_nan(self):
+        from src.data.dividend_screener import _safe
+        assert _safe(float('nan')) == 0.0
+        assert _safe(float('nan'), 42.0) == 42.0
+
+    def test_safe_preserves_valid_zero(self):
+        from src.data.dividend_screener import _safe
+        assert _safe(0.0) == 0.0
+        assert _safe(0) == 0
+
+    def test_safe_handles_none(self):
+        from src.data.dividend_screener import _safe
+        assert _safe(None) == 0.0
+        assert _safe(None, 'fallback') == 'fallback'
+
+    def test_build_metrics_handles_nan_values(self):
+        """NaN-Werte aus API dürfen nicht in Quality Score propagieren."""
+        screener = DividendScreener()
+        quote = {
+            'symbol': 'NAN',
+            'dividendYield': float('nan'),
+            'trailingAnnualDividendYield': float('nan'),
+            'regularMarketPrice': float('nan'),
+            'marketCap': float('nan'),
+        }
+        detailed = {
+            'info': {
+                'debtToEquity': float('nan'),
+                'returnOnEquity': float('nan'),
+                'payoutRatio': float('nan'),
+            },
+            'dividends': pd.Series(dtype=float),
+        }
+        metrics = screener._build_dividend_metrics(quote, detailed)
+        assert metrics is not None
+        assert metrics.dividend_yield == 0.0
+        assert metrics.trailing_dividend_yield == 0.0
+        assert metrics.debt_to_equity == 0.0
+        score = screener._calculate_quality_score(metrics)
+        assert 0 <= score <= 100
+        assert not np.isnan(score)
+
+
+class TestTrailingYieldNormalization:
+    """Tests für konsistente Normalisierung von trailing_dividend_yield."""
+
+    def test_trailing_yield_as_fraction(self):
+        """Trailing Yield als Fraktion (0.032) wird zu Prozent (3.2) normalisiert."""
+        screener = DividendScreener()
+        quote = {
+            'symbol': 'FRAC',
+            'dividendYield': 3.2,
+            'trailingAnnualDividendYield': 0.032,
+        }
+        metrics = screener._build_dividend_metrics(quote, None)
+        assert metrics is not None
+        assert abs(metrics.trailing_dividend_yield - 3.2) < 0.01
+
+    def test_trailing_yield_as_percent(self):
+        """Trailing Yield bereits als Prozent (3.2) bleibt 3.2."""
+        screener = DividendScreener()
+        quote = {
+            'symbol': 'PCT',
+            'dividendYield': 3.2,
+            'trailingAnnualDividendYield': 3.2,
+        }
+        metrics = screener._build_dividend_metrics(quote, None)
+        assert metrics is not None
+        assert abs(metrics.trailing_dividend_yield - 3.2) < 0.01
+
+    def test_trailing_yield_zero(self):
+        """Trailing Yield 0 bleibt 0."""
+        screener = DividendScreener()
+        quote = {
+            'symbol': 'ZERO',
+            'trailingAnnualDividendYield': 0.0,
+        }
+        metrics = screener._build_dividend_metrics(quote, None)
+        assert metrics is not None
+        assert metrics.trailing_dividend_yield == 0.0
+
+
+class TestCacheSizeLimit:
+    """Tests für die Cache-Größenbegrenzung."""
+
+    def test_cache_evicts_oldest_when_full(self):
+        """Ältester Eintrag wird entfernt wenn Cache voll ist."""
+        from src.data.dividend_screener import _MAX_CACHE_SIZE
+        screener = DividendScreener()
+
+        # Fülle Cache bis zum Limit
+        for i in range(_MAX_CACHE_SIZE):
+            screener._set_cached(f'T{i}', _make_metrics(f'T{i}'))
+
+        assert len(screener._cache) == _MAX_CACHE_SIZE
+
+        # Ein weiterer Eintrag sollte den ältesten verdrängen
+        screener._set_cached('NEW', _make_metrics('NEW'))
+        assert len(screener._cache) == _MAX_CACHE_SIZE
+        assert screener._get_cached('NEW') is not None
+        # T0 war der älteste und sollte entfernt worden sein
+        assert screener._get_cached('T0') is None
+
+    def test_cache_update_existing_no_eviction(self):
+        """Update eines bestehenden Eintrags löst keine Eviction aus."""
+        from src.data.dividend_screener import _MAX_CACHE_SIZE
+        screener = DividendScreener()
+
+        for i in range(_MAX_CACHE_SIZE):
+            screener._set_cached(f'T{i}', _make_metrics(f'T{i}'))
+
+        # Update eines bestehenden → kein Evict
+        screener._set_cached('T0', _make_metrics('T0'))
+        assert len(screener._cache) == _MAX_CACHE_SIZE
+        assert screener._get_cached('T0') is not None

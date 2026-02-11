@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from typing import Optional, Callable
 from datetime import date
 import logging
+import re
 import time
 import numpy as np
 import pandas as pd
@@ -25,6 +26,9 @@ _CACHE_TTL_SECONDS = 3600
 # Retry-Konfiguration für API-Aufrufe
 _MAX_RETRIES = 3
 _RETRY_BASE_DELAY = 0.5  # Sekunden, wird exponentiell erhöht
+
+# Maximale Anzahl Cache-Einträge (verhindert unbegrenztes Wachstum)
+_MAX_CACHE_SIZE = 500
 
 
 # Exchange-Mapping für die UI
@@ -85,8 +89,12 @@ class _CacheEntry:
 
 
 def _safe(val, default=0.0):
-    """Gibt val zurück falls nicht None, sonst default. Bewahrt valide 0.0 Werte."""
-    return val if val is not None else default
+    """Gibt val zurück falls nicht None/NaN, sonst default. Bewahrt valide 0.0 Werte."""
+    if val is None:
+        return default
+    if isinstance(val, float) and np.isnan(val):
+        return default
+    return val
 
 
 class DividendScreener:
@@ -114,6 +122,10 @@ class DividendScreener:
 
     def _set_cached(self, ticker: str, metrics: DividendMetrics) -> None:
         """Speichert Metrics mit aktuellem Zeitstempel im Cache."""
+        # Bei Überschreitung des Limits: älteste Einträge entfernen
+        if len(self._cache) >= _MAX_CACHE_SIZE and ticker not in self._cache:
+            oldest_key = min(self._cache, key=lambda k: self._cache[k].timestamp)
+            del self._cache[oldest_key]
         self._cache[ticker] = _CacheEntry(
             metrics=metrics,
             timestamp=time.monotonic()
@@ -142,8 +154,17 @@ class DividendScreener:
         if progress_callback:
             progress_callback(20, "Suche Dividenden-Aktien...")
 
-        requested_size = filters.max_results * 2
-        quotes = self._fetch_screen_results(query, requested_size)
+        # Immer Maximum anfordern, da Post-Filter viele Kandidaten aussortieren
+        quotes = self._fetch_screen_results(query, _YF_SCREEN_MAX)
+
+        # Preferred Shares herausfiltern (z.B. NLY-PF, MS-PA)
+        before_pref = len(quotes) if quotes else 0
+        quotes = [q for q in quotes if not self._is_preferred_share(q.get('symbol', ''))]
+        if quotes and before_pref > len(quotes):
+            logger.info(
+                "%d Preferred Shares herausgefiltert (%d -> %d)",
+                before_pref - len(quotes), before_pref, len(quotes)
+            )
 
         if not quotes:
             return []
@@ -209,6 +230,13 @@ class DividendScreener:
             progress_callback(100, f"{len(results)} Dividenden-Aktien gefunden.")
 
         return results
+
+    @staticmethod
+    def _is_preferred_share(symbol: str) -> bool:
+        """Erkennt Preferred Shares anhand des Ticker-Symbols (z.B. NLY-PF, MS-PA, AXIA-P)."""
+        if not symbol:
+            return False
+        return bool(re.search(r'-P[A-Z]?$', symbol))
 
     def _build_screen_query(self, filters: ScreenerFilter) -> yf.EquityQuery:
         """Baut yfinance EquityQuery aus ScreenerFilter."""
@@ -456,7 +484,9 @@ class DividendScreener:
             div_yield = _safe(quote.get('dividendYield'))
             if 0 < div_yield < 1:
                 div_yield *= 100
-            trailing_yield = _safe(quote.get('trailingAnnualDividendYield')) * 100
+            trailing_yield = _safe(quote.get('trailingAnnualDividendYield'))
+            if 0 < trailing_yield < 1:
+                trailing_yield *= 100
 
             return DividendMetrics(
                 ticker=ticker,
