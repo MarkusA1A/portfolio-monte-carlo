@@ -849,11 +849,12 @@ with st.sidebar:
     if st.session_state.screener_inject_tickers:
         st.session_state[_TICKER_INPUT_KEY] = st.session_state.screener_inject_tickers
         st.session_state.screener_inject_tickers = None
+    elif _TICKER_INPUT_KEY not in st.session_state:
+        default_tickers = ", ".join(loaded["tickers"]) if loaded else "AAPL, MSFT, GOOGL, AMZN"
+        st.session_state[_TICKER_INPUT_KEY] = default_tickers
 
-    default_tickers = ", ".join(loaded["tickers"]) if loaded else "AAPL, MSFT, GOOGL, AMZN"
     tickers_input = st.text_input(
         "Ticker-Symbole oder ISINs (kommasepariert)",
-        value=default_tickers,
         key=_TICKER_INPUT_KEY,
         help="z.B. AAPL, MSFT, GOOGL oder ISINs wie US0378331005, DE0007164600"
     )
