@@ -160,6 +160,31 @@ def scroll_to_top():
     st.markdown(js, unsafe_allow_html=True)
 
 
+def collapse_sidebar():
+    """Collapse sidebar and scroll to top so user sees the main content."""
+    js = """
+    <script>
+        (function() {
+            var doc = window.parent.document;
+            // Collapse sidebar (works on mobile and desktop)
+            var sidebar = doc.querySelector('[data-testid="stSidebar"]');
+            if (sidebar) {
+                sidebar.setAttribute('aria-expanded', 'false');
+            }
+            // Click the collapse button if present
+            var btn = doc.querySelector('[data-testid="stSidebarCollapseButton"]')
+                || doc.querySelector('[data-testid="stSidebar"] button[kind="headerNoPadding"]');
+            if (btn) btn.click();
+            // Scroll main content to top
+            var main = doc.querySelector('section.main');
+            if (main) main.scrollTo({top: 0, behavior: 'smooth'});
+            window.parent.scrollTo({top: 0, behavior: 'smooth'});
+        })();
+    </script>
+    """
+    st.markdown(js, unsafe_allow_html=True)
+
+
 def parse_german_number(text: str, default: int = 0) -> int:
     """Parse German-formatted number (dots as thousand separators) to integer."""
     if not text:
@@ -1227,6 +1252,7 @@ with st.sidebar:
 if run_screener and scr_min_yield >= scr_max_yield:
     st.warning("Min. Rendite muss kleiner als Max. Rendite sein.")
 elif run_screener:
+    collapse_sidebar()
     with st.status("**Dividenden-Screener läuft...**", expanded=True) as status:
         progress_bar = st.progress(0)
         progress_text = st.empty()
@@ -1385,8 +1411,8 @@ if run_simulation:
                      'withdrawal_results', 'swr_result', 'swr_params']:
             st.session_state[key] = None
 
-        # Scroll to top so user sees progress
-        scroll_to_top()
+        # Collapse sidebar and scroll to top so user sees progress
+        collapse_sidebar()
 
         # Memory estimation and automatic adjustment
         estimated_memory = estimate_memory_mb(num_simulations, time_horizon_days, len(tickers))
