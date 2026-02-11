@@ -895,14 +895,14 @@ with st.sidebar:
     with st.expander("Dividenden-Aktien suchen", expanded=False):
         st.caption("Findet Aktien mit nachhaltigen, wachsenden Dividenden")
 
-        scr_col1, scr_col2 = st.columns(2)
-        with scr_col1:
+        scr_row1_c1, scr_row1_c2 = st.columns(2)
+        with scr_row1_c1:
             scr_min_yield = st.number_input(
                 "Min. Rendite (%)",
                 min_value=0.0, max_value=20.0, value=2.0, step=0.5,
                 key="scr_min_yield"
             )
-        with scr_col2:
+        with scr_row1_c2:
             scr_max_yield = st.number_input(
                 "Max. Rendite (%)",
                 min_value=0.0, max_value=30.0, value=10.0, step=0.5,
@@ -910,34 +910,38 @@ with st.sidebar:
                 help="Sehr hohe Renditen (>8%) können auf Probleme hindeuten"
             )
 
-        scr_min_years = st.slider(
-            "Min. Jahre Dividendenwachstum",
-            min_value=0, max_value=50, value=5,
-            key="scr_min_years",
-            help="Dividend Aristocrats: 25+ Jahre"
-        )
+        scr_row2_c1, scr_row2_c2 = st.columns(2)
+        with scr_row2_c1:
+            scr_min_years = st.slider(
+                "Min. Jahre Wachstum",
+                min_value=0, max_value=50, value=5,
+                key="scr_min_years",
+                help="Dividend Aristocrats: 25+ Jahre"
+            )
+        with scr_row2_c2:
+            scr_max_payout = st.slider(
+                "Max. Payout (%)",
+                min_value=10, max_value=100, value=70,
+                key="scr_max_payout",
+                help="< 70% gilt als nachhaltig"
+            )
 
-        scr_max_payout = st.slider(
-            "Max. Ausschüttungsquote (%)",
-            min_value=10, max_value=100, value=70,
-            key="scr_max_payout",
-            help="< 70% gilt als nachhaltig"
-        )
-
-        scr_exchange_label = st.selectbox(
-            "Börse",
-            options=list(EXCHANGE_OPTIONS.keys()),
-            index=0,
-            key="scr_exchange"
-        )
-        scr_exchange = EXCHANGE_OPTIONS[scr_exchange_label]
-
-        scr_max_results = st.select_slider(
-            "Anzahl Ergebnisse",
-            options=[10, 25, 50],
-            value=25,
-            key="scr_max_results"
-        )
+        scr_row3_c1, scr_row3_c2 = st.columns(2)
+        with scr_row3_c1:
+            scr_exchange_label = st.selectbox(
+                "Börse",
+                options=list(EXCHANGE_OPTIONS.keys()),
+                index=0,
+                key="scr_exchange"
+            )
+            scr_exchange = EXCHANGE_OPTIONS[scr_exchange_label]
+        with scr_row3_c2:
+            scr_max_results = st.select_slider(
+                "Anzahl Ergebnisse",
+                options=[10, 25, 50],
+                value=25,
+                key="scr_max_results"
+            )
 
         if scr_min_yield >= scr_max_yield:
             st.warning("Min. Rendite muss kleiner als Max. Rendite sein.")
