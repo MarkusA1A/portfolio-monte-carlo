@@ -160,18 +160,28 @@ def scroll_to_top():
 
 
 def collapse_sidebar():
-    """Collapse sidebar and scroll to top so user sees the main content."""
+    """Collapse sidebar and scroll to top so user sees the main content.
+
+    Uses CSS-only approach which works reliably on all platforms including
+    mobile Safari where JavaScript in components.html is unreliable.
+    The CSS is only present during this rerun; on subsequent reruns the
+    sidebar returns to normal.
+    """
+    st.markdown("""
+    <style>
+    [data-testid="stSidebar"] {
+        transform: translateX(-100%) !important;
+        transition: transform 0.3s ease-out !important;
+        visibility: hidden !important;
+    }
+    [data-testid="stSidebarCollapsedControl"] {
+        display: flex !important;
+        visibility: visible !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     _run_js("""
-        var doc = window.parent.document;
-        // Collapse sidebar
-        var sidebar = doc.querySelector('[data-testid="stSidebar"]');
-        if (sidebar) sidebar.setAttribute('aria-expanded', 'false');
-        // Try multiple selectors for the collapse button
-        var btn = doc.querySelector('[data-testid="stSidebarCollapseButton"]')
-            || doc.querySelector('button[data-testid="baseButton-headerNoPadding"]');
-        if (btn) btn.click();
-        // Scroll to top
-        var main = doc.querySelector('section.main');
+        var main = window.parent.document.querySelector('section.main');
         if (main) main.scrollTo({top: 0, behavior: 'smooth'});
         window.parent.scrollTo({top: 0, behavior: 'smooth'});
     """)
