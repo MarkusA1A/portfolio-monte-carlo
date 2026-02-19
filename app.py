@@ -160,23 +160,23 @@ def scroll_to_top():
 
 
 def collapse_sidebar():
-    """Collapse sidebar and scroll to top so user sees the main content.
+    """Collapse sidebar and scroll to top on iPhone only.
 
-    Uses CSS-only approach which works reliably on all platforms including
-    mobile Safari where JavaScript in components.html is unreliable.
-    The CSS is only present during this rerun; on subsequent reruns the
-    sidebar returns to normal.
+    Uses CSS media query to target only small mobile screens (iPhone).
+    On tablets and desktops the sidebar remains visible.
     """
     st.markdown("""
     <style>
-    [data-testid="stSidebar"] {
-        transform: translateX(-100%) !important;
-        transition: transform 0.3s ease-out !important;
-        visibility: hidden !important;
-    }
-    [data-testid="stSidebarCollapsedControl"] {
-        display: flex !important;
-        visibility: visible !important;
+    @media only screen and (max-width: 430px) {
+        [data-testid="stSidebar"] {
+            transform: translateX(-100%) !important;
+            transition: transform 0.3s ease-out !important;
+            visibility: hidden !important;
+        }
+        [data-testid="stSidebarCollapsedControl"] {
+            display: flex !important;
+            visibility: visible !important;
+        }
     }
     </style>
     """, unsafe_allow_html=True)
