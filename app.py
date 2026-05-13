@@ -2703,7 +2703,7 @@ else:
     st.markdown("---")
     with st.expander("**Was ist neu?** – Aktuelle Updates", expanded=False):
         st.markdown("""
-        ### Version 1.4.0 (Februar 2025)
+        ### Version 1.4.0 (Februar 2026)
 
         #### NEU: Dividenden-Screener
         - **Dividenden-Aktien suchen**: Findet Aktien mit nachhaltigen, wachsenden Dividenden
@@ -2723,7 +2723,7 @@ else:
 
         ---
 
-        ### Version 1.3.0 (Februar 2025)
+        ### Version 1.3.0 (Februar 2026)
 
         #### NEU: REITs als Asset-Klasse
         - **VNQ als neuer Benchmark**: Vanguard Real Estate ETF für Immobilien-Vergleiche
@@ -2737,7 +2737,7 @@ else:
 
         ---
 
-        ### Version 1.2.0 (Februar 2025)
+        ### Version 1.2.0 (Februar 2026)
 
         #### NEU: Steuern bei Entnahme
         - **KESt-Berechnung im Entnahmeplan**: Bei jeder Entnahme wird der Gewinnanteil versteuert
@@ -2747,7 +2747,7 @@ else:
 
         ---
 
-        ### Version 1.1.0 (Februar 2025)
+        ### Version 1.1.0 (Februar 2026)
 
         #### Steuer- und Kostenrechner bei Rebalancing
         - **Österreichische KESt (27,5%)** auf realisierte Gewinne bei Rebalancing
@@ -2758,7 +2758,7 @@ else:
 
         ---
 
-        ### Version 1.0.1 (Februar 2025)
+        ### Version 1.0.1 (Februar 2026)
 
         #### Verbesserungen
         - Hilfetexte für Rebalancing-Strategien hinzugefügt
@@ -2767,7 +2767,7 @@ else:
 
         ---
 
-        ### Version 1.0.0 (Januar 2025)
+        ### Version 1.0.0 (Januar 2026)
 
         #### Kern-Features
         - Monte Carlo Simulation mit bis zu 50.000 Pfaden
