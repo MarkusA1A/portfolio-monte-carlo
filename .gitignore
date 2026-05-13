@@ -42,7 +42,7 @@ env/
 htmlcov/
 
 # Streamlit
-.streamlit/
+.streamlit/secrets.toml
 
 # OS
 .DS_Store

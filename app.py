@@ -249,8 +249,21 @@ st.markdown("""
     /* === GLOBAL TYPOGRAPHY === */
     html, body, [class*="css"] {
         font-family: var(--font-sans) !important;
+        color: var(--color-text);
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Force dark body text regardless of browser dark-mode preference */
+    [data-testid="stMarkdownContainer"],
+    [data-testid="stMarkdownContainer"] p,
+    [data-testid="stMarkdownContainer"] li,
+    [data-testid="stMarkdownContainer"] td,
+    [data-testid="stMarkdownContainer"] th,
+    [data-testid="stMarkdownContainer"] strong,
+    [data-testid="stMarkdownContainer"] em,
+    [data-testid="stMarkdownContainer"] span {
+        color: var(--color-text);
     }
 
     /* Serif display headings */
@@ -443,7 +456,13 @@ st.markdown("""
         border-radius: var(--radius-sm) !important;
         border: 1px solid var(--color-border) !important;
         background: var(--color-surface) !important;
+        color: var(--color-text) !important;
         transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .stTextInput input,
+    .stNumberInput input,
+    .stTextArea textarea {
+        color: var(--color-text) !important;
     }
     .stTextInput input:focus,
     .stNumberInput input:focus {
