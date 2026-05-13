@@ -763,7 +763,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown("""
-<h1 style="margin-bottom: 0.1rem;">Monte Carlo Portfolio Simulation <span class="app-badge">v1.4</span></h1>
+<h1 style="margin-bottom: 0.1rem;">Monte Carlo Portfolio Simulation <span class="app-badge">v1.4.1</span></h1>
 """, unsafe_allow_html=True)
 st.caption("von Markus O. Thalhamer")
 
@@ -2703,6 +2703,15 @@ else:
     st.markdown("---")
     with st.expander("**Was ist neu?** – Aktuelle Updates", expanded=False):
         st.markdown("""
+        ### Version 1.4.1 (Mai 2026)
+
+        #### Fix: Sichtbarkeit im Dark-Mode-Browser
+        - **Light-Theme gepinnt**: `.streamlit/config.toml` setzt das Theme fest auf hell, damit Streamlit den Body-Text nicht mehr aus der Browser-Präferenz ableitet (führte vorher zu hellem Text auf hellem Hintergrund → unsichtbar)
+        - **Defensive CSS-Regeln**: Explizite Textfarben für Markdown-Container und Input-Felder, falls Browser-Dark-Mode versucht, das Theme zu überschreiben
+        - **Klarere Eingabefelder**: Werte in Text-/Number-Inputs sind jetzt garantiert dunkel und gut lesbar
+
+        ---
+
         ### Version 1.4.0 (Februar 2026)
 
         #### NEU: Dividenden-Screener
